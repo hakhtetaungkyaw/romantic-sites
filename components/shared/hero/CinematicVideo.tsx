@@ -1,0 +1,157 @@
+"use client";
+
+import { motion, type Variants } from "framer-motion";
+import { ChevronDown } from "lucide-react";
+import { useEffect, useRef } from "react";
+
+import FloatingHearts from "@/components/shared/ambient/FloatingHearts";
+
+interface CinematicHeroProps {
+  videoSrc: string;
+  poster?: string;
+  partnerA: string;
+  partnerB: string;
+  title: string;
+}
+
+const letterContainer: Variants = {
+  hidden: {},
+  visible: {
+    transition: { staggerChildren: 0.035, delayChildren: 0.3 },
+  },
+};
+
+const letterChild: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: "easeOut" },
+  },
+};
+
+function AnimatedName({ text }: { text: string }) {
+  return (
+    <motion.span
+      variants={letterContainer}
+      initial="hidden"
+      animate="visible"
+      aria-label={text}
+      className="inline"
+    >
+      {Array.from(text).map((char, i) => (
+        <motion.span
+          key={i}
+          variants={letterChild}
+          aria-hidden="true"
+          className={
+            char === "&" ? "inline-block text-[#d4af7a]" : "inline-block"
+          }
+        >
+          {char === " " ? " " : char}
+        </motion.span>
+      ))}
+    </motion.span>
+  );
+}
+
+export default function CinematicHero({
+  videoSrc,
+  poster,
+  partnerA,
+  partnerB,
+  title,
+}: CinematicHeroProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    // Some browsers ignore the JSX `muted` attribute on initial paint, which
+    // silently blocks autoplay — setting the property directly guarantees it.
+    video.muted = true;
+    video.play().catch(() => {});
+  }, []);
+
+  return (
+    <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 text-center">
+      <video
+        ref={videoRef}
+        className="absolute inset-0 z-0 h-full w-full object-cover"
+        src={videoSrc}
+        poster={poster}
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+      />
+
+      <div className="absolute inset-0 z-[1] bg-gradient-to-b from-[#1a0a12]/75 via-[#2b0f1a]/50 to-[#1a0a12]" />
+
+      <div className="absolute inset-0 z-[2]">
+        <FloatingHearts count={10} color="#e8b4bc" />
+      </div>
+
+      <div className="relative z-10">
+        <motion.p
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.9, ease: "easeOut" }}
+          className="mb-5 text-xs uppercase tracking-[0.4em] text-[#e8b4bc]/80 sm:text-sm"
+        >
+          A love story
+        </motion.p>
+
+        <h1 className="font-display text-5xl font-medium text-[#faf5f0] sm:text-6xl md:text-7xl">
+          <AnimatedName text={`${partnerA} & ${partnerB}`} />
+        </h1>
+
+        <motion.div
+          className="mx-auto mt-7 flex justify-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 1.1 }}
+        >
+          <svg width="120" height="2" viewBox="0 0 120 2" fill="none">
+            <motion.line
+              x1="0"
+              y1="1"
+              x2="120"
+              y2="1"
+              stroke="#d4af7a"
+              strokeWidth="1"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 1, ease: "easeOut", delay: 1.1 }}
+            />
+          </svg>
+        </motion.div>
+
+        <motion.h2
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.9, ease: "easeOut", delay: 1.3 }}
+          className="font-display mt-7 max-w-xl text-xl italic text-[#faf5f0]/80 sm:text-2xl"
+        >
+          {title}
+        </motion.h2>
+      </div>
+
+      <motion.div
+        className="absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2 text-[#faf5f0]/60"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay: 1.8 }}
+      >
+        <span className="text-[10px] uppercase tracking-[0.3em]">Scroll</span>
+        <motion.div
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <ChevronDown size={18} />
+        </motion.div>
+      </motion.div>
+    </section>
+  );
+}

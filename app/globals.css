@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Playfair Display";
+  src: url("/fonts/PlayfairDisplay-Variable.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Playfair Display";
+  src: url("/fonts/PlayfairDisplay-Italic-Variable.woff2") format("woff2");
+  font-weight: 400 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+.font-display {
+  font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+}
+
+/* Pure-CSS star twinkle, driven by per-star custom properties — cheaper than
+   animating ~100 elements via JS. Opacity, scale, and glow all peak together;
+   the 45%/55% pair (instead of a single 50% midpoint) holds the bright peak
+   for a beat instead of reversing the instant it's reached. */
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: var(--min-opacity, 0.15);
+    transform: scale(var(--min-scale, 0.85));
+    box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+  }
+  45%,
+  55% {
+    opacity: var(--max-opacity, 1);
+    transform: scale(var(--max-scale, 1.2));
+    box-shadow: 0 0 var(--glow, 3px) rgba(255, 255, 255, var(--glow-opacity, 0.6));
+  }
+}
+
+/* Hard blink (not a fade) for the typewriter cursor — this is a pure CSS
+   animation so it can run from first paint with no JS/hydration involvement. */
+@keyframes cursor-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.typewriter-cursor {
+  animation: cursor-blink 1s step-end infinite;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  --font-serif: Georgia, "Times New Roman", Times, serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
