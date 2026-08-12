@@ -5,12 +5,14 @@ import { ChevronDown } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 import FloatingHearts from "@/components/shared/ambient/FloatingHearts";
+import { formatPeopleHeading } from "@/lib/people";
+import type { SitePerson } from "@/types/site";
 
 interface CinematicHeroProps {
   videoSrc: string;
   poster?: string;
-  partnerA: string;
-  partnerB: string;
+  people: SitePerson[];
+  groupTitle?: string;
   title: string;
 }
 
@@ -58,11 +60,12 @@ function AnimatedName({ text }: { text: string }) {
 export default function CinematicHero({
   videoSrc,
   poster,
-  partnerA,
-  partnerB,
+  people,
+  groupTitle,
   title,
 }: CinematicHeroProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const heading = formatPeopleHeading(people, groupTitle);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -104,7 +107,7 @@ export default function CinematicHero({
         </motion.p>
 
         <h1 className="font-display text-5xl font-medium text-[#faf5f0] sm:text-6xl md:text-7xl">
-          <AnimatedName text={`${partnerA} & ${partnerB}`} />
+          <AnimatedName text={heading} />
         </h1>
 
         <motion.div

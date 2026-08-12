@@ -12,18 +12,15 @@ interface AnniversaryV1Props {
 }
 
 export default function AnniversaryV1({ data }: AnniversaryV1Props) {
-  const { coupleNames, title, message, specialDate, photos, songTitle } = data;
+  const { people, groupTitle, title, message, specialDate, photos, songs } = data;
+  const song = songs?.[0];
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#2a0a16] via-[#4a0f24] to-[#1a060e]">
       <FloatingHearts />
 
       <div className="relative z-10">
-        <StaticFade
-          partnerA={coupleNames.partnerA}
-          partnerB={coupleNames.partnerB}
-          title={title}
-        />
+        <StaticFade people={people} groupTitle={groupTitle} title={title} />
 
         <CountdownTimer specialDate={specialDate} />
 
@@ -31,10 +28,10 @@ export default function AnniversaryV1({ data }: AnniversaryV1Props) {
 
         <SimpleCentered message={message} />
 
-        {songTitle && (
+        {song && (
           <div className="flex items-center justify-center gap-2 pb-16 text-sm text-rose-200/70">
             <Music size={16} />
-            <span>{songTitle}</span>
+            <span>{song.title}</span>
           </div>
         )}
       </div>

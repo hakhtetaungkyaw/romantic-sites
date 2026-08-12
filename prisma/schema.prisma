@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Template {
+  id           String   @id @default(cuid())
+  name         String
+  category     String // "anniversary" | "birthday"
+  componentKey String   @unique // e.g. "anniversary-v1", "anniversary-v2"
+  previewImage String?
+  price        Int // store in cents to avoid float issues
+  isActive     Boolean  @default(true)
+  orders       Order[]
+  createdAt    DateTime @default(now())
+}
+
+model Order {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  templateId      String
+  template        Template @relation(fields: [templateId], references: [id])
+  customerName    String
+  customerEmail   String
+  people          Json // array of { name } objects, minimum 1 entry
+  groupTitle      String? // optional collective title for group orders, e.g. "The Smith Family"
+  title           String
+  message         String   @db.Text
+  specialDate     DateTime
+  photos          Json // array of { src, caption }
+  videos          Json? // array of { src, caption?, role? } — e.g. role: "hero" | "moment"
+  songs           Json? // array of { url, title }
+  secretMessage   String?  @db.Text
+  milestones      Json?
+  places          Json?
+  // Escape hatch for genuinely new, template-specific data that doesn't fit
+  // an existing field yet. Not a dumping ground — if a field turns out to be
+  // used by every template, promote it to a real column instead.
+  customData      Json?
+  accessPin       String?
+  paymentStatus   String   @default("pending") // pending | verified | rejected
+  paymentProofUrl String?
+  deliveryStatus  String   @default("pending") // pending | in_progress | delivered
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

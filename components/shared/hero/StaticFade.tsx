@@ -2,13 +2,32 @@
 
 import { motion } from "framer-motion";
 
+import { formatPeopleHeading } from "@/lib/people";
+import type { SitePerson } from "@/types/site";
+
 interface HeroProps {
-  partnerA: string;
-  partnerB: string;
+  people: SitePerson[];
+  groupTitle?: string;
   title: string;
 }
 
-export default function Hero({ partnerA, partnerB, title }: HeroProps) {
+function withAccentedAmpersands(text: string) {
+  return text
+    .split(/(&)/)
+    .map((part, i) =>
+      part === "&" ? (
+        <span key={i} className="text-rose-300/70">
+          &amp;
+        </span>
+      ) : (
+        part
+      ),
+    );
+}
+
+export default function Hero({ people, groupTitle, title }: HeroProps) {
+  const heading = formatPeopleHeading(people, groupTitle);
+
   return (
     <section className="relative flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
       <motion.p
@@ -26,7 +45,7 @@ export default function Hero({ partnerA, partnerB, title }: HeroProps) {
         transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
         className="font-serif text-5xl font-medium text-rose-50 sm:text-6xl md:text-7xl"
       >
-        {partnerA} <span className="text-rose-300/70">&amp;</span> {partnerB}
+        {withAccentedAmpersands(heading)}
       </motion.h1>
 
       <motion.h2

@@ -25,21 +25,24 @@ interface AnniversaryV2Props {
 
 export default function AnniversaryV2({ data }: AnniversaryV2Props) {
   const {
-    coupleNames,
+    people,
+    groupTitle,
     title,
-    heroVideo,
-    momentVideo,
+    videos,
     photos,
     specialDate,
     message,
     milestones,
     closingLine,
-    songTitle,
-    songUrl,
+    songs,
     secretNote,
     places,
     typedPhrases,
   } = data;
+
+  const heroVideo = videos?.find((video) => video.role === "hero");
+  const momentVideo = videos?.filter((video) => video.role === "moment")[0];
+  const song = songs?.[0];
 
   // Page-level scroll progress drives a slow, continuous shift between two
   // burgundy shades, so the background breathes gently instead of cutting
@@ -65,16 +68,16 @@ export default function AnniversaryV2({ data }: AnniversaryV2Props) {
       >
         <CursorGlow />
         <ScrollProgressIndicator />
-        <SongPlayer songTitle={songTitle} songUrl={songUrl} />
+        <SongPlayer songTitle={song?.title} songUrl={song?.url} />
         <LoveNote note={secretNote} />
 
         <div className="relative z-10">
           {heroVideo ? (
             <CinematicVideo
-              videoSrc={heroVideo}
+              videoSrc={heroVideo.src}
               poster={photos[0]?.src}
-              partnerA={coupleNames.partnerA}
-              partnerB={coupleNames.partnerB}
+              people={people}
+              groupTitle={groupTitle}
               title={title}
             />
           ) : null}
@@ -89,15 +92,15 @@ export default function AnniversaryV2({ data }: AnniversaryV2Props) {
 
           <Magazine photos={photos} />
 
-          <Video videoSrc={momentVideo} />
+          <Video videoSrc={momentVideo?.src} caption={momentVideo?.caption} />
 
           <VerticalLine milestones={milestones} />
 
           <PlacesWeveBeen places={places} />
 
           <Signature
-            partnerA={coupleNames.partnerA}
-            partnerB={coupleNames.partnerB}
+            people={people}
+            groupTitle={groupTitle}
             closingLine={closingLine}
           />
         </div>

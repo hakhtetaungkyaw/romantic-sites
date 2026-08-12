@@ -3,19 +3,31 @@ export interface SitePhoto {
   caption?: string;
 }
 
+export interface SitePerson {
+  name: string;
+}
+
+export interface SiteVideo {
+  src: string;
+  caption?: string;
+  role?: string;
+}
+
+export interface SiteSong {
+  url: string;
+  title: string;
+}
+
 export interface SiteData {
-  coupleNames: {
-    partnerA: string;
-    partnerB: string;
-  };
+  /** Minimum 1 entry. */
+  people: SitePerson[];
+  groupTitle?: string;
   title: string;
   message: string;
   specialDate: string;
   photos: SitePhoto[];
-  songTitle?: string;
-  songUrl?: string;
-  heroVideo?: string;
-  momentVideo?: string;
+  videos?: SiteVideo[];
+  songs?: SiteSong[];
   milestones?: {
     date: string;
     title: string;
@@ -31,4 +43,10 @@ export interface SiteData {
     photo?: string;
   }[];
   typedPhrases?: string[];
+  /**
+   * Escape hatch for genuinely new, template-specific data that doesn't fit
+   * an existing field yet. Not a dumping ground — if a field turns out to be
+   * used by every template, promote it to a real field instead.
+   */
+  customData?: Record<string, unknown>;
 }

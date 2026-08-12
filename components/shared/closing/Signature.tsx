@@ -2,20 +2,39 @@
 
 import { motion } from "framer-motion";
 
+import { formatPeopleHeading } from "@/lib/people";
+import type { SitePerson } from "@/types/site";
+
 interface ClosingSignatureProps {
-  partnerA: string;
-  partnerB: string;
+  people: SitePerson[];
+  groupTitle?: string;
   closingLine?: string;
 }
 
 const HEART_PATH =
   "M50,88 C20,62 0,40 0,22 C0,8 12,-2 27,-2 C38,-2 47,5 50,15 C53,5 62,-2 73,-2 C88,-2 100,8 100,22 C100,40 80,62 50,88 Z";
 
+function withAccentedAmpersands(text: string) {
+  return text
+    .split(/(&)/)
+    .map((part, i) =>
+      part === "&" ? (
+        <span key={i} className="text-[#d4af7a]">
+          &amp;
+        </span>
+      ) : (
+        part
+      ),
+    );
+}
+
 export default function ClosingSignature({
-  partnerA,
-  partnerB,
+  people,
+  groupTitle,
   closingLine,
 }: ClosingSignatureProps) {
+  const heading = formatPeopleHeading(people, groupTitle);
+
   return (
     <section className="relative bg-gradient-to-b from-transparent to-[#0d0509] px-6 pb-[140px] pt-[120px] text-center">
       {closingLine && (
@@ -37,7 +56,7 @@ export default function ClosingSignature({
         transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
         className="font-display mt-8 text-4xl italic text-[#faf5f0] sm:text-5xl"
       >
-        {partnerA} <span className="text-[#d4af7a]">&amp;</span> {partnerB}
+        {withAccentedAmpersands(heading)}
       </motion.div>
 
       <motion.svg

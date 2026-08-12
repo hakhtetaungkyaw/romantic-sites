@@ -9,6 +9,19 @@ section 4.
 shape of every entry in `SiteData.photos` — both gallery photo components take
 `SitePhoto[]`, though only `gallery/Magazine.tsx` displays the caption.
 
+`SitePerson` (`{ name: string }`, defined in `types/site.ts`) is the shape of every
+entry in `SiteData.people` (minimum 1 entry). Any component that displays the
+couple/group's name(s) — `hero/StaticFade`, `hero/CinematicVideo`,
+`closing/Signature` — takes `people: SitePerson[]` plus an optional `groupTitle:
+string`, and derives its display string via `formatPeopleHeading()` in
+`lib/people.ts`: `groupTitle` if set, `"For {name}"` for exactly 1 person, `"{a} &
+{b}"` for exactly 2, comma-joined with a final `&` for 3+. `SiteData.videos` (`{
+src: string; caption?: string; role?: string }[]`) and `SiteData.songs` (`{ url:
+string; title: string }[]`) are similarly flexible arrays — templates pick which
+entries to use (by `role` for videos, `[0]` for songs) and pass plain `src`/
+`caption`/`songTitle`/`songUrl`-style props down, so individual components stay
+unaware of the array shape.
+
 ## Templates
 
 - `templates/AnniversaryV1.tsx` — composes `hero/StaticFade`, `countdown/Simple`,
@@ -28,14 +41,15 @@ shape of every entry in `SiteData.photos` — both gallery photo components take
 ## hero/
 
 - `StaticFade.tsx` — simple centered hero, staggered fade-up text, no background
-  media, rose/burgundy V1 palette — used in: V1 — props: `partnerA: string`,
-  `partnerB: string`, `title: string`
+  media, rose/burgundy V1 palette, ampersands in the formatted heading are wrapped
+  in an accent-colored span — used in: V1 — props: `people: SitePerson[]`,
+  `groupTitle?: string`, `title: string`
 - `CinematicVideo.tsx` — full-viewport background video with dark overlay,
-  letter-by-letter staggered name reveal, self-drawing gold divider line (SVG
-  `pathLength`), pulsing scroll indicator, poster fallback, hearts scoped to this
-  section only (imports `ambient/FloatingHearts` directly) — used in: V2 — props:
-  `videoSrc: string`, `poster?: string`, `partnerA: string`, `partnerB: string`,
-  `title: string`
+  letter-by-letter staggered reveal of the formatted heading, self-drawing gold
+  divider line (SVG `pathLength`), pulsing scroll indicator, poster fallback,
+  hearts scoped to this section only (imports `ambient/FloatingHearts` directly)
+  — used in: V2 — props: `videoSrc: string`, `poster?: string`, `people:
+  SitePerson[]`, `groupTitle?: string`, `title: string`
 
 ## gallery/
 
@@ -151,7 +165,8 @@ Site-wide fixed UI utilities the visitor acts on — distinct from `ambient/`
 
 ## closing/
 
-- `Signature.tsx` — closing line, couple names styled as a rotated handwritten
-  signature, gold SVG heart that draws then fills on scroll into view, fades to a
-  darker gradient at the page's bottom edge — used in: V2 — props:
-  `partnerA: string`, `partnerB: string`, `closingLine?: string`
+- `Signature.tsx` — closing line, formatted heading styled as a rotated handwritten
+  signature (ampersands accent-colored, same pattern as `hero/StaticFade`), gold
+  SVG heart that draws then fills on scroll into view, fades to a darker gradient
+  at the page's bottom edge — used in: V2 — props: `people: SitePerson[]`,
+  `groupTitle?: string`, `closingLine?: string`

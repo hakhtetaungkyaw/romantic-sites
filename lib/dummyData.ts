@@ -65,19 +65,17 @@ const galleryPhotos: SitePhoto[] = [
 ];
 
 export const dummySiteData: SiteData = {
-  coupleNames: {
-    partnerA: "Aria",
-    partnerB: "Noah",
-  },
+  people: [{ name: "Aria" }, { name: "Noah" }],
   title: "Two Hearts, One Story",
   message:
     "From the moment we met, I knew my life had changed for the better. Every day with you feels like a new page in the best story I've ever known. Thank you for your laughter, your patience, and your endless love. Here's to every memory we've made and every one still waiting for us.",
   specialDate: "2026-06-14T00:00:00.000Z",
   photos: galleryPhotos,
-  songTitle: "Our Song",
-  songUrl: "/audio/Dandelions.mp3",
-  heroVideo: "/videos/hero-01.mp4",
-  momentVideo: "/videos/hero-02.mp4",
+  songs: [{ title: "Our Song", url: "/audio/Dandelions.mp3" }],
+  videos: [
+    { src: "/videos/hero-01.mp4", role: "hero" },
+    { src: "/videos/hero-02.mp4", role: "moment" },
+  ],
   milestones: [
     {
       date: "March 2021",
