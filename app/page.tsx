@@ -1,28 +1,35 @@
-import Link from "next/link";
+import FinalCTA from "@/components/home/FinalCTA";
+import Footer from "@/components/home/Footer";
+import Hero from "@/components/home/Hero";
+import HowItWorks from "@/components/home/HowItWorks";
+import Nav from "@/components/home/Nav";
+import TemplateShowcase from "@/components/home/TemplateShowcase";
+import { prisma, withRetry } from "@/lib/db";
 
-export default function Home() {
+export default async function Home() {
+  const templates = await withRetry(() =>
+    prisma.template.findMany({
+      where: { isActive: true },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        name: true,
+        componentKey: true,
+        category: true,
+        price: true,
+        previewImage: true,
+      },
+    }),
+  );
+
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-8 bg-[#1a0a12] px-6 text-center text-[#faf5f0]">
-      <div className="space-y-2">
-        <h1 className="font-serif text-3xl">Romantic Sites</h1>
-        <p className="text-sm text-[#faf5f0]/60">
-          Template previews, built from shared demo data.
-        </p>
-      </div>
-      <div className="flex flex-col gap-4 sm:flex-row">
-        <Link
-          href="/preview/anniversary-v1"
-          className="rounded-full border border-[#d4af7a]/40 px-6 py-3 text-sm transition-colors hover:border-[#d4af7a] hover:bg-[#d4af7a]/10"
-        >
-          Anniversary V1
-        </Link>
-        <Link
-          href="/preview/anniversary-v2"
-          className="rounded-full border border-[#d4af7a]/40 px-6 py-3 text-sm transition-colors hover:border-[#d4af7a] hover:bg-[#d4af7a]/10"
-        >
-          Anniversary V2
-        </Link>
-      </div>
-    </div>
+    <main className="flex-1 bg-[#0a0a0b] font-sans">
+      <Nav />
+      <Hero />
+      <TemplateShowcase templates={templates} />
+      <HowItWorks />
+      <FinalCTA />
+      <Footer />
+    </main>
   );
 }

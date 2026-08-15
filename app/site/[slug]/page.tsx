@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import AnniversaryV1 from "@/components/templates/AnniversaryV1";
 import AnniversaryV2 from "@/components/templates/AnniversaryV2";
-import { prisma } from "@/lib/db";
+import { prisma, withRetry } from "@/lib/db";
 import { orderToSiteData } from "@/lib/orderMapper";
 import type { SiteData } from "@/types/site";
 
@@ -26,10 +26,12 @@ export default async function OrderSitePage({
 }) {
   const { slug } = await params;
 
-  const order = await prisma.order.findUnique({
-    where: { slug },
-    include: { template: true },
-  });
+  const order = await withRetry(() =>
+    prisma.order.findUnique({
+      where: { slug },
+      include: { template: true },
+    }),
+  );
 
   if (!order) {
     notFound();

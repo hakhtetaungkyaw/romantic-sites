@@ -13,7 +13,7 @@ model Template {
   category     String // "anniversary" | "birthday"
   componentKey String   @unique // e.g. "anniversary-v1", "anniversary-v2"
   previewImage String?
-  price        Int // store in cents to avoid float issues
+  price        Int // whole MMK (Kyat) amount — no decimal subdivision
   isActive     Boolean  @default(true)
   orders       Order[]
   createdAt    DateTime @default(now())

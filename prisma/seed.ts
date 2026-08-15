@@ -1,3 +1,5 @@
+import "dotenv/config";
+
 import { prisma } from "@/lib/db";
 
 const templates = [
@@ -5,13 +7,13 @@ const templates = [
     name: "Anniversary V1",
     category: "anniversary",
     componentKey: "anniversary-v1",
-    price: 1999,
+    price: 45000,
   },
   {
     name: "Anniversary V2",
     category: "anniversary",
     componentKey: "anniversary-v2",
-    price: 2999,
+    price: 65000,
   },
 ];
 

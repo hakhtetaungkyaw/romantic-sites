@@ -44,27 +44,78 @@ function CompassRose() {
   );
 }
 
-function MapRoads() {
+// Very low-opacity latitude/longitude-style grid — reads as "map" without
+// being literal cartography, and sits well beneath the pins/route.
+const GRID_LINES = [20, 40, 60, 80];
+
+function MapGrid() {
   return (
     <svg
       viewBox="0 0 100 100"
       preserveAspectRatio="none"
       aria-hidden="true"
-      className="pointer-events-none absolute inset-0 h-full w-full text-[#d4af7a]/15"
+      className="pointer-events-none absolute inset-0 h-full w-full text-[#d4af7a]/[0.07]"
     >
-      <path
-        d="M -5 30 C 20 10, 40 50, 65 35 S 100 20, 110 40"
+      {GRID_LINES.map((pos) => (
+        <line key={`h-${pos}`} x1={0} y1={pos} x2={100} y2={pos} stroke="currentColor" strokeWidth={0.2} />
+      ))}
+      {GRID_LINES.map((pos) => (
+        <line key={`v-${pos}`} x1={pos} y1={0} x2={pos} y2={100} stroke="currentColor" strokeWidth={0.2} />
+      ))}
+    </svg>
+  );
+}
+
+// Converts an ordered list of points into a single smooth SVG path (uniform
+// Catmull-Rom spline, converted to cubic beziers — the standard 1/6-tension
+// technique) that passes exactly through every point in sequence. Used so
+// the route line traces the real pins in the order they appear in the data,
+// not a decorative path unrelated to it.
+function smoothPathFromPoints(points: { x: number; y: number }[]): string {
+  if (points.length < 2) return "";
+  if (points.length === 2) {
+    return `M ${points[0].x},${points[0].y} L ${points[1].x},${points[1].y}`;
+  }
+
+  let d = `M ${points[0].x},${points[0].y}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i - 1] ?? points[i];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[i + 2] ?? p2;
+
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+    d += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
+  }
+  return d;
+}
+
+function RouteLine({ places }: { places: Place[] }) {
+  if (places.length < 2) return null;
+  const d = smoothPathFromPoints(places.map((p) => ({ x: p.x, y: p.y })));
+
+  return (
+    <svg
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 h-full w-full"
+    >
+      <motion.path
+        d={d}
         fill="none"
-        stroke="currentColor"
-        strokeWidth="0.3"
-        strokeDasharray="1.2 2"
-      />
-      <path
-        d="M -5 78 C 25 60, 55 92, 80 65 S 105 55, 115 75"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="0.3"
-        strokeDasharray="1.2 2"
+        stroke="#d4af7a"
+        strokeWidth={0.3}
+        strokeDasharray="1.4 2.2"
+        strokeLinecap="round"
+        initial={{ pathLength: 0, opacity: 0 }}
+        whileInView={{ pathLength: 1, opacity: 0.55 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 1.8, ease: "easeInOut" }}
       />
     </svg>
   );
@@ -176,11 +227,24 @@ export default function PlacesWeveBeen({ places }: PlacesWeveBeenProps) {
         Places we&apos;ve been
       </motion.p>
 
+      {/* Discoverability hint — the hover-to-reveal cards aren't obvious from
+          a static view. Desktop/tablet only: mobile's stacked list already
+          shows every card without needing to hover. */}
+      <motion.p
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
+        className="font-display mb-6 hidden text-center text-xs italic text-[#d4af7a]/60 sm:block"
+      >
+        Hover over a pin to relive the memory
+      </motion.p>
+
       {/* Desktop/tablet: stylized map with hover-revealed pins. The rounded
-          card look + clipped road decoration live on an inner inset-0 layer,
-          separate from the (unclipped) outer container the pins sit in — so a
-          tall caption card near the top edge can pop up freely instead of
-          being cut off by the map's own overflow-hidden. */}
+          card look + clipped background decoration live on an inner inset-0
+          layer, separate from the (unclipped) outer container the pins sit
+          in — so a tall caption card near the top edge can pop up freely
+          instead of being cut off by the map's own overflow-hidden. */}
       <motion.div
         initial={{ opacity: 0, scale: 0.97 }}
         whileInView={{ opacity: 1, scale: 1 }}
@@ -189,7 +253,9 @@ export default function PlacesWeveBeen({ places }: PlacesWeveBeenProps) {
         className="relative mx-auto hidden aspect-[16/10] w-full max-w-4xl sm:block"
       >
         <div className="absolute inset-0 overflow-hidden rounded-2xl border border-[#d4af7a]/20 bg-gradient-to-br from-[#2b0f1a] via-[#3a1220] to-[#1a0a12] shadow-2xl shadow-black/40">
-          <MapRoads />
+          <MapGrid />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(212,175,122,0.07)_0%,transparent_70%)]" />
+          <RouteLine places={places} />
           <CompassRose />
         </div>
 

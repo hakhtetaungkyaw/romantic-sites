@@ -1,6 +1,6 @@
 import { Music } from "lucide-react";
 
-import FloatingHearts from "@/components/shared/ambient/FloatingHearts";
+import FloatingHearts from "@/components/shared/ambient/FloatingHeartsV1";
 import CountdownTimer from "@/components/shared/countdown/Simple";
 import UniformGrid from "@/components/shared/gallery/UniformGrid";
 import StaticFade from "@/components/shared/hero/StaticFade";
@@ -16,7 +16,7 @@ export default function AnniversaryV1({ data }: AnniversaryV1Props) {
   const song = songs?.[0];
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#2a0a16] via-[#4a0f24] to-[#1a060e]">
+    <main className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#faf6f0] to-[#f0e8dc]">
       <FloatingHearts />
 
       <div className="relative z-10">
@@ -29,7 +29,7 @@ export default function AnniversaryV1({ data }: AnniversaryV1Props) {
         <SimpleCentered message={message} />
 
         {song && (
-          <div className="flex items-center justify-center gap-2 pb-16 text-sm text-rose-200/70">
+          <div className="flex items-center justify-center gap-2 pb-16 text-sm text-[#c9a0a0]">
             <Music size={16} />
             <span>{song.title}</span>
           </div>

@@ -26,42 +26,6 @@ const galleryPhotos: SitePhoto[] = [
     src: "/demo-assets/photos/couple-06.jpg",
     caption: "Lifted higher than the evening itself.",
   },
-  {
-    src: "/demo-assets/photos/couple-07.jpg",
-    caption: "Just holding on a little longer.",
-  },
-  {
-    src: "/demo-assets/photos/couple-08.jpg",
-    caption: "Our silhouette against a sky on fire.",
-  },
-  {
-    src: "/demo-assets/photos/couple-09.jpg",
-    caption: "Two hills away from everywhere else.",
-  },
-  {
-    src: "/demo-assets/photos/couple-10.jpg",
-    caption: "Camera up, still only seeing her.",
-  },
-  {
-    src: "/demo-assets/photos/couple-11.jpg",
-    caption: "Leaning in, laughing at nothing at all.",
-  },
-  {
-    src: "/demo-assets/photos/couple-12.jpg",
-    caption: "Hand in hand, and the tide waited.",
-  },
-  {
-    src: "/demo-assets/photos/couple-13.jpg",
-    caption: "One flower, handed over mid-sentence.",
-  },
-  {
-    src: "/demo-assets/photos/couple-14.jpg",
-    caption: "Come on — the boats won't wait.",
-  },
-  {
-    src: "/demo-assets/photos/couple-15.jpg",
-    caption: "Grey skies, never grey between us.",
-  },
 ];
 
 export const dummySiteData: SiteData = {
@@ -104,33 +68,38 @@ export const dummySiteData: SiteData = {
   closingLine: "And every day since has been another page we get to write together.",
   secretNote:
     "If you're reading this, it means you found the little things too — just like I hoped you would.",
+  // x/y positions are tuned (not the raw midpoints of the map) so the route
+  // line — which connects them in this exact order — reads as a deliberate
+  // wandering journey flowing left-to-right across the map, rather than a
+  // scattered zigzag. Real customer data will vary; the component itself
+  // stays fully data-driven, this is just a better-looking demo arrangement.
   places: [
     {
       name: "Riverside Café",
       caption: "Where a shared umbrella turned into a three-hour conversation.",
-      x: 22,
-      y: 38,
+      x: 15,
+      y: 55,
       photo: "/demo-assets/photos/couple-07.jpg",
     },
     {
       name: "The Coastal Trail",
       caption: "Three weeks of backpacking, and still not enough.",
-      x: 68,
-      y: 22,
+      x: 38,
+      y: 25,
       photo: "/demo-assets/photos/couple-09.jpg",
     },
     {
       name: "Our First Apartment",
       caption: "The leaky faucet that somehow felt like home.",
-      x: 42,
-      y: 68,
+      x: 62,
+      y: 60,
       photo: "/demo-assets/photos/couple-02.jpg",
     },
     {
       name: "That Same Rainy Street",
       caption: "Where he asked, four years later, in the same rain.",
-      x: 80,
-      y: 62,
+      x: 85,
+      y: 32,
       photo: "/demo-assets/photos/couple-08.jpg",
     },
   ],

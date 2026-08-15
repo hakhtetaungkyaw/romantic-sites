@@ -2,16 +2,42 @@
 
 import { motion } from "framer-motion";
 import { Music, Pause, Play } from "lucide-react";
-import { useRef, useState } from "react";
+import { useImperativeHandle, useRef, useState } from "react";
+
+export interface SongPlayerHandle {
+  /** Attempts playback; safely no-ops if there's no track or the ref isn't attached yet. */
+  play: () => void;
+}
 
 interface SongPlayerProps {
   songTitle?: string;
   songUrl?: string;
+  ref?: React.Ref<SongPlayerHandle>;
 }
 
-export default function SongPlayer({ songTitle, songUrl }: SongPlayerProps) {
+export default function SongPlayer({ songTitle, songUrl, ref }: SongPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+
+  const attemptPlay = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    // Only flip to "playing" once playback actually starts — setting it
+    // optimistically would leave the button showing "pause" even if the
+    // browser rejects the play() call (invalid source, decode error,
+    // autoplay blocked, etc). Rejection is expected/handled, not a bug.
+    audio
+      .play()
+      .then(() => setIsPlaying(true))
+      .catch((error) => {
+        console.error("Unable to play song:", error);
+        setIsPlaying(false);
+      });
+  };
+
+  // Exposed so UnlockGate's onOpen can start playback synchronously within
+  // the same click that dismisses the gate — see AnniversaryV2.
+  useImperativeHandle(ref, () => ({ play: attemptPlay }), []);
 
   if (!songTitle) return null;
 
@@ -19,16 +45,7 @@ export default function SongPlayer({ songTitle, songUrl }: SongPlayerProps) {
     const audio = audioRef.current;
     if (!audio) return;
     if (audio.paused) {
-      // Only flip to "playing" once playback actually starts — setting it
-      // optimistically would leave the button showing "pause" even if the
-      // browser rejects the play() call (invalid source, decode error, etc).
-      audio
-        .play()
-        .then(() => setIsPlaying(true))
-        .catch((error) => {
-          console.error("Unable to play song:", error);
-          setIsPlaying(false);
-        });
+      attemptPlay();
     } else {
       audio.pause();
       setIsPlaying(false);

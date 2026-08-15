@@ -69,16 +69,16 @@ export default function CountdownTimer({
 
   return (
     <section className="px-6 py-12 text-center">
-      <p className="mb-6 text-sm uppercase tracking-[0.3em] text-rose-200/80">
+      <p className="mb-6 text-sm uppercase tracking-[0.3em] text-[#c9a0a0]">
         {label}
       </p>
       <div className="mx-auto flex max-w-xl justify-center gap-4 sm:gap-8">
         {units.map((unit) => (
           <div key={unit.label} className="flex flex-col items-center">
-            <span className="font-serif text-3xl font-medium text-rose-50 sm:text-4xl">
+            <span className="font-serif text-3xl font-medium text-[#2c2420] sm:text-4xl">
               {String(unit.value).padStart(2, "0")}
             </span>
-            <span className="mt-1 text-xs uppercase tracking-widest text-rose-200/70">
+            <span className="mt-1 text-xs uppercase tracking-widest text-[#b8935f]">
               {unit.label}
             </span>
           </div>

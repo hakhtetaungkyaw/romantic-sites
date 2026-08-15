@@ -5,6 +5,13 @@ import { useEffect, useState } from "react";
 
 interface UnlockGateProps {
   children: React.ReactNode;
+  /**
+   * Fired synchronously inside the click handler (before the opening
+   * animation's setTimeout) so callers can start something like audio
+   * playback within the same user-gesture call stack — required for browser
+   * autoplay policies to treat it as user-initiated.
+   */
+  onOpen?: () => void;
 }
 
 const HEART_PATH =
@@ -23,7 +30,7 @@ const heartVariants: Variants = {
   },
 };
 
-export default function UnlockGate({ children }: UnlockGateProps) {
+export default function UnlockGate({ children, onOpen }: UnlockGateProps) {
   // No randomness or time-based values here, so the initial (unopened) render
   // is identical on server and client — hydration-safe by construction.
   const [opened, setOpened] = useState(false);
@@ -41,6 +48,10 @@ export default function UnlockGate({ children }: UnlockGateProps) {
   const handleOpen = () => {
     if (isOpening) return;
     setIsOpening(true);
+    // Fired synchronously within this click handler — not after the
+    // setTimeout below — so it still counts as user-initiated for browser
+    // autoplay policies.
+    onOpen?.();
     // Let the burst animation play before the overlay itself fades, so the
     // "opening" feels like a distinct beat rather than an instant cut.
     window.setTimeout(() => setOpened(true), 550);

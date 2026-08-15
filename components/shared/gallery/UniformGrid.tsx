@@ -20,7 +20,7 @@ export default function PhotoGalleryGrid({ photos }: PhotoGalleryGridProps) {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.6, delay: index * 0.1, ease: "easeOut" }}
-            className="group relative aspect-[3/4] overflow-hidden rounded-lg shadow-lg"
+            className="group relative aspect-[3/4] overflow-hidden rounded-lg border border-[#2c2420]/5 shadow-lg shadow-[#2c2420]/10"
           >
             <Image
               src={photo.src}

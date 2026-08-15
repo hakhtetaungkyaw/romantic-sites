@@ -16,7 +16,7 @@ export default function MessageSection({ message }: MessageSectionProps) {
         transition={{ duration: 0.9, ease: "easeOut" }}
         className="mx-auto max-w-2xl text-center"
       >
-        <p className="font-serif text-xl italic leading-relaxed text-rose-50/90 sm:text-2xl">
+        <p className="font-serif text-xl italic leading-relaxed text-[#2c2420]/85 sm:text-2xl">
           &ldquo;{message}&rdquo;
         </p>
       </motion.div>

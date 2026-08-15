@@ -55,11 +55,15 @@ unaware of the array shape.
 
 - `UniformGrid.tsx` — uniform grid, no border, equal-size cells (2/4 cols), simple
   hover zoom, `rounded-lg` — used in: V1 — props: `photos: SitePhoto[]`
-- `Magazine.tsx` — asymmetric masonry columns (CSS `columns-1/2/3`,
-  `break-inside-avoid`, so any photo count packs with no empty gaps), each cell
-  sized by the photo's real aspect ratio, thin gold mat-frame border, hover
-  brightens border + gold glow + slight scale + reveals the photo's caption over a
-  dark scrim, staggered scroll reveal — used in: V2 — props: `photos: SitePhoto[]`
+- `Magazine.tsx` — "Museum Wall" single-column exhibition layout (`max-w-2xl`,
+  one photo per row, generous vertical spacing), each photo in a thin gold-border
+  frame with a cream mat and wall-lit shadow, sized via a large/small
+  feature-vs-companion rhythm (every third photo is a larger "feature" piece) at
+  its true aspect ratio (`PHOTO_DIMENSIONS`, no crop/distortion), permanent
+  small-caps gold "wall label" caption below each frame (no hover-to-reveal),
+  hover brightens the frame border + slight image scale, each piece fades/slides
+  up independently on scroll into view — used in: V2 — props: `photos:
+  SitePhoto[]`
 - `Video.tsx` — standalone cinematic video block (separate from the hero video),
   vignette overlay, minimal gold play/pause toggle, italic serif caption below,
   renders `null` if no video source — used in: V2 — props: `videoSrc?: string`,
@@ -95,7 +99,10 @@ unaware of the array shape.
 
 - `VerticalLine.tsx` — vertical relationship timeline, center gold line draws in
   via scroll progress, pulsing dots, cards alternate left/right on desktop and
-  stack on mobile, renders `null` if no milestones — used in: V2 — props:
+  stack on mobile. With no milestones, collapses to a zero-footprint empty
+  container rather than returning `null` outright — its `useScroll(target)` ref
+  must stay attached to a real DOM node on every render, or Framer Motion throws
+  ("Target ref is defined but not hydrated") — used in: V2 — props:
   `milestones?: { date: string; title: string; description?: string }[]`
 
 ## places/
@@ -132,11 +139,18 @@ Mood/atmosphere layers — decorative, not functional UI or narrative content.
 - `NightSky.tsx` — full-width navy-to-purple gradient section (`#0d0a1a` →
   `#1e1240`, distinct from the burgundy elsewhere), ~100 fixed twinkling stars
   (seeded PRNG, not `Math.random()`, for hydration-safe stable positions) across 3
-  depth layers with independent scroll-parallax rates, a hand-placed 10-point heart
-  constellation draws itself in (`pathLength`) on scroll into view, centered
-  caption + the couple's special date in large serif gold (UTC-based formatting so
-  it can't shift a day between server/client timezones), star count reduced ~⅔ on
-  mobile — used in: V2 — props: `specialDate: string`
+  depth layers with independent scroll-parallax rates. Also: a crescent moon
+  (SVG mask "two overlapping circles" technique, craters, pulsing glow, top-right
+  corner), 4 slow-drifting translucent clouds (same seeded-PRNG technique as the
+  stars, so no client-only gating needed), and occasional shooting stars (a
+  gradient-trail SVG streak on a steep diagonal, true runtime-random timing
+  re-rolled every ~2.5–4.5s — the one genuinely client-only-randomized piece in
+  this file, gated behind a `useEffect`). A smooth bezier-curve heart (not a
+  dot/polygon constellation) draws itself in (`pathLength`) on scroll into view,
+  with 3 pulsing "glint" accents along the path; centered caption + the couple's
+  special date in large serif gold (UTC-based formatting so it can't shift a day
+  between server/client timezones), star count reduced ~⅔ on mobile — used in:
+  V2 — props: `specialDate: string`
 
 ## interactive/
 
@@ -149,12 +163,20 @@ Site-wide fixed UI utilities the visitor acts on — distinct from `ambient/`
   so every section's entrance animation starts fresh at reveal, not before. Locks
   `document.body` scroll while showing. Hydration-safe by construction (`opened`
   starts at a static `false`) — used in: V2 (wraps the entire template) — props:
-  `children: React.ReactNode`
+  `children: React.ReactNode`, `onOpen?: () => void` (fired synchronously inside
+  the click handler, before the opening-animation delay — `AnniversaryV2` uses
+  this to start `SongPlayer` playback within the same user gesture, satisfying
+  browser autoplay policies)
 - `SongPlayer.tsx` — small fixed bottom-right pill, glass-morphism background, gold
-  border, play/pause toggle over a plain `<audio>` element, music-note icon, italic
-  serif song title, no autoplay. If `songUrl` is missing, still renders (title +
-  icon) but the button is disabled and no `<audio>` element is mounted at all — used
-  in: V2 — props: `songTitle?: string`, `songUrl?: string`
+  border, play/pause toggle over a plain `<audio>` element, music-note icon,
+  italic serif song title. Autoplays once, the moment `UnlockGate` is clicked
+  (via an imperative `play()` handle exposed through `ref`/`useImperativeHandle`
+  — `AnniversaryV2` mounts `SongPlayer` *outside* `UnlockGate`'s gated children so
+  the `<audio>` element already exists at click-time), after which the
+  play/pause toggle controls it normally. If `songUrl` is missing, still renders
+  (title + icon) but the button is disabled, no `<audio>` element mounts, and
+  the autoplay call is a no-op — used in: V2 — props: `songTitle?: string`,
+  `songUrl?: string`, `ref?: React.Ref<SongPlayerHandle>`
 - `LoveNote.tsx` — small fixed bottom-left tab (pulsing gold heart) mirroring
   `SongPlayer`'s position, click opens a small popover card with a short personal
   note, dismissible via × or backdrop click, renders `null` if no note is provided
