@@ -293,7 +293,18 @@ function FlappingButterfly({ bf }: { bf: ButterflyConfig }) {
   const lottieRef = useRef<LottieRefCurrentProps>(null);
   return (
     <motion.div
-      className="absolute -translate-x-1/2 -translate-y-1/2"
+      // scale-75 below sm: (640px) — butterfly PX size is fixed (bf.size,
+      // via inline style, set by the data array above), so on a narrow
+      // phone the same pixel footprint covers proportionally more of the
+      // screen than on desktop, increasing the odds of visibly overlapping
+      // the centered heading/subtitle column. A CSS transform scale on top
+      // of the existing fixed size is the only way to shrink it per-
+      // breakpoint without touching the waypoint/size data itself (which
+      // would also change desktop flight paths) — translate-1/2 above still
+      // centers correctly on the intended (left%, top%) anchor regardless,
+      // since that offset resolves against the element's own untransformed
+      // layout size, not its post-scale rendered size.
+      className="absolute -translate-x-1/2 -translate-y-1/2 scale-75 sm:scale-100"
       style={{ width: bf.size, height: bf.size, opacity: bf.opacity, filter: bf.filter }}
       initial={{
         left: `${bf.waypointsX[0]}%`,

@@ -519,7 +519,7 @@ function TypewriterText({ text }: { text: string }) {
           transition={{ duration: 0.15, delay: REVEAL_BASE_DELAY + i * CHAR_DELAY }}
           className={
             i === 0
-              ? "float-left mr-3 text-7xl font-medium leading-[0.8] text-[#d97a5f]"
+              ? "float-left mr-3 text-6xl font-medium leading-[0.8] text-[#d97a5f] sm:text-7xl"
               : undefined
           }
         >
@@ -705,7 +705,22 @@ export default function SealedLetter({ message }: SealedLetterProps) {
                       aria-modal="true"
                       aria-label="A letter"
                       transition={{ layout: { type: "spring", stiffness: 160, damping: 20 } }}
-                      className="relative w-full overflow-hidden rounded-2xl border border-[#c9a68a]/60 bg-[#fdf6ec] px-8 py-14 shadow-[0_25px_50px_-12px_rgba(107,67,50,0.25),inset_0_0_0_1px_rgba(255,251,244,0.5)] sm:px-12 sm:py-16"
+                      // max-h-[85dvh] + overflow-y-auto (explicit
+                      // overflow-x-hidden alongside it, not the bare
+                      // `overflow-hidden` shorthand this used to be) — a
+                      // long message on a short mobile viewport used to have
+                      // no height cap at all, so it could render taller than
+                      // the screen with nothing to scroll it into view.
+                      // Explicitly setting BOTH axes (never leaving one at
+                      // its `visible` default) is what avoids the earlier
+                      // "one non-visible axis forces the other to auto too"
+                      // scrollbar bug (see gallery/SunlitPolaroids.tsx's own
+                      // lightbox history) — with x explicitly hidden here,
+                      // there's no `visible` axis left for that CSS rule to
+                      // promote. Invisible/no-op for any normal-length
+                      // message at any screen size; only engages once
+                      // content actually exceeds 85% of the viewport height.
+                      className="relative max-h-[85dvh] w-full overflow-y-auto overflow-x-hidden rounded-2xl border border-[#c9a68a]/60 bg-[#fdf6ec] px-8 py-14 shadow-[0_25px_50px_-12px_rgba(107,67,50,0.25),inset_0_0_0_1px_rgba(255,251,244,0.5)] sm:px-12 sm:py-16"
                     >
                       <PaperGrain />
 

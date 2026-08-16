@@ -169,11 +169,15 @@ const VINE_LEAVES = [
 // shape renders undistorted regardless of the row's actual width — same
 // fix timeline/SunsetTimeline.tsx's vertical vine never needed, since that
 // one's SVG maps 1:1 to real pixels with no stretching at all.
-function VineConnector() {
+function VineConnectorDesktop() {
   return (
+    // sm: and up only (see VineConnectorMobile below for <sm) — this is the
+    // single-row horizontal vine, correct only when all 4 cards actually
+    // fit on one line (sm:w-20 x4 + sm:gap-5 x3 = 380px, well under any sm+
+    // viewport).
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute left-0 top-1/2 h-10 w-full -translate-y-1/2 opacity-70"
+      className="pointer-events-none absolute left-0 top-1/2 hidden h-10 w-full -translate-y-1/2 opacity-70 sm:block"
     >
       <svg
         viewBox="0 0 200 40"
@@ -199,6 +203,89 @@ function VineConnector() {
         </svg>
       ))}
     </div>
+  );
+}
+
+// Below sm:, the row's `flex-wrap` reflows the 4 cards into a 2x2 grid
+// (w-[74px] x4 + gap-3 x3 = 332px, wider than a ~327px-narrow-phone's
+// available row width) — a single horizontal line has nothing to run
+// through in that arrangement. This reshapes the SAME vine (identical
+// VINE_COLOR, strokeWidth, and vineLeafPath() construction as
+// VineConnectorDesktop above) into a bracket/S-curve that threads across
+// the top row, curls down the right side, then back across the bottom row —
+// touching all 4 card positions in their actual 2x2 spots instead of
+// floating through the middle of both rows.
+//
+// Sizing: both wrapped rows are the same width (2 x 74px cards + one 12px
+// gap-3 = 160px) and both get centered independently by the row's own
+// `justify-center` — so a container fixed at exactly that same 160px width
+// and centered the same way (`left-1/2 -translate-x-1/2`) lines up with the
+// card cluster exactly, at 375px/390px/414px/anything else alike, without
+// needing to read the cards' real rendered position at runtime. Height is
+// the one dimension that can't be hardcoded (card height depends on
+// content), so the container uses `inset-y-0` instead of a fixed h-*  — an
+// absolutely positioned box with both `top` and `bottom` set stretches to
+// exactly match its containing block's real auto-computed height (here,
+// the row div's own height, i.e. both wrapped rows + the row-gap between
+// them). The path/leaf viewBox below is 0-160 horizontally (mapping 1:1 to
+// that fixed 160px, no stretch) and 0-100 vertically (mapping to
+// whatever that real height turns out to be) — so viewBox y=25 always lands
+// at 25% down the ACTUAL box, same value a leaf's own `top: 25%` would
+// resolve to, keeping the path and its leaves aligned regardless of how
+// tall the cards render.
+const VINE_PATH_MOBILE =
+  "M10,25 C25,17 40,33 55,25 C70,17 90,33 105,25 C120,17 135,20 150,25 C158,35 158,65 150,75 C135,83 120,67 105,75 C90,83 70,67 55,75 C40,83 25,67 10,75";
+const VINE_LEAVES_MOBILE = [
+  { x: 20, y: 18, angle: -35 },
+  { x: 55, y: 30, angle: 35 },
+  { x: 105, y: 18, angle: -35 },
+  { x: 140, y: 30, angle: 35 },
+  { x: 140, y: 70, angle: 35 },
+  { x: 105, y: 82, angle: -35 },
+  { x: 55, y: 70, angle: 35 },
+  { x: 20, y: 82, angle: -35 },
+];
+const VINE_MOBILE_WIDTH = 160;
+
+function VineConnectorMobile() {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-y-0 left-1/2 w-[160px] -translate-x-1/2 opacity-70 sm:hidden"
+    >
+      <svg
+        viewBox={`0 0 ${VINE_MOBILE_WIDTH} 100`}
+        preserveAspectRatio="none"
+        className="absolute inset-0 h-full w-full"
+      >
+        <path d={VINE_PATH_MOBILE} fill="none" stroke={VINE_COLOR} strokeWidth={2} strokeLinecap="round" />
+      </svg>
+      {VINE_LEAVES_MOBILE.map((leaf, i) => (
+        <svg
+          key={i}
+          viewBox="0 0 28 28"
+          width={28}
+          height={28}
+          className="absolute -translate-x-1/2 -translate-y-1/2"
+          style={{ left: `${(leaf.x / VINE_MOBILE_WIDTH) * 100}%`, top: `${leaf.y}%` }}
+        >
+          <path
+            d={vineLeafPath(13, 8)}
+            fill={VINE_COLOR}
+            transform={`translate(14 20) rotate(${leaf.angle})`}
+          />
+        </svg>
+      ))}
+    </div>
+  );
+}
+
+function VineConnector() {
+  return (
+    <>
+      <VineConnectorDesktop />
+      <VineConnectorMobile />
+    </>
   );
 }
 
