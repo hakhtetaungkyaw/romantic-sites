@@ -42,7 +42,8 @@ unaware of the array shape.
 
 - `StaticFade.tsx` — simple centered hero, staggered fade-up text, no background
   media, rose/burgundy V1 palette, ampersands in the formatted heading are wrapped
-  in an accent-colored span — used in: V1 — props: `people: SitePerson[]`,
+  in an accent-colored span — used in: V1 (old rose/burgundy template,
+  pre-"Golden Hour" redesign) — props: `people: SitePerson[]`,
   `groupTitle?: string`, `title: string`
 - `CinematicVideo.tsx` — full-viewport background video with dark overlay,
   letter-by-letter staggered reveal of the formatted heading, self-drawing gold
@@ -50,11 +51,23 @@ unaware of the array shape.
   hearts scoped to this section only (imports `ambient/FloatingHearts` directly)
   — used in: V2 — props: `videoSrc: string`, `poster?: string`, `people:
   SitePerson[]`, `groupTitle?: string`, `title: string`
+- `SunsetHero.tsx` — V1 "Golden Hour" redesign's hero (Section 1 of the new
+  palette/motif system, see `PROJECT_CONTEXT.md` section 5): muted peach-to-cream
+  gradient sky, corner sun glow, drifting warm light motes, a bottom sunflower
+  silhouette field (16 fixed `SunflowerSvg` flowers, foreground/mid/background
+  depth tiers by size+color, some swaying), and 7 free-flying butterflies
+  rendered via the real `public/animations/butterfly.json` Lottie (hand-drawn
+  waypoint flight paths per instance, muted to warm coral/dusty-rose/terracotta/
+  gold via per-instance CSS `filter`, sped-up wing flap via `lottieRef.setSpeed`)
+  — used in: V1 (new "Golden Hour" redesign, not yet wired into
+  `AnniversaryV1.tsx`) — props: `people: SitePerson[]`, `groupTitle?: string`,
+  `title: string`
 
 ## gallery/
 
 - `UniformGrid.tsx` — uniform grid, no border, equal-size cells (2/4 cols), simple
-  hover zoom, `rounded-lg` — used in: V1 — props: `photos: SitePhoto[]`
+  hover zoom, `rounded-lg` — used in: V1 (old rose/burgundy template,
+  pre-"Golden Hour" redesign) — props: `photos: SitePhoto[]`
 - `Magazine.tsx` — "Museum Wall" single-column exhibition layout (`max-w-2xl`,
   one photo per row, generous vertical spacing), each photo in a thin gold-border
   frame with a cream mat and wall-lit shadow, sized via a large/small
@@ -68,14 +81,29 @@ unaware of the array shape.
   vignette overlay, minimal gold play/pause toggle, italic serif caption below,
   renders `null` if no video source — used in: V2 — props: `videoSrc?: string`,
   `caption?: string`
+- `SunlitPolaroids.tsx` — V1 "Golden Hour" counterpart to `Magazine.tsx`: a
+  scrapbook/polaroid metaphor instead of a formal gallery wall — cream-bordered
+  polaroid cards in a responsive grid, fixed (not random) alternating tilt per
+  index, a small rotated "washi tape" corner strip per photo, italic caption in
+  the polaroid's bottom strip, independent staggered fade/rotate-settle on
+  scroll into view, hover straightens + scales the card slightly. Own local
+  copy of `Magazine.tsx`'s photo-dimensions lookup (same demo asset files,
+  no shared code) — used in: V1 (new "Golden Hour" redesign) — props:
+  `photos: SitePhoto[]`
 
 ## message/
 
 - `SimpleCentered.tsx` — plain centered italic quote, no card or frame — used in:
-  V1 — props: `message: string`
+  V1 (old rose/burgundy template, pre-"Golden Hour" redesign) — props: `message: string`
 - `LetterCard.tsx` — letter-styled glass card (warm paper tint, backdrop-blur),
   large gold drop cap on first letter, oversized serif quotation marks — used in:
   V2 — props: `message: string`
+- `SealedLetter.tsx` — V1 "Golden Hour" counterpart to `LetterCard.tsx`: warm
+  cream paper card (rose-gold border, terracotta drop cap, same oversized quote
+  marks) topped with a small decorative sunflower-bloom "wax seal" medallion
+  (own local bezier-petal construction, same technique as
+  `countdown/SunflowerCountdown.tsx`'s digit blooms but not shared code) —
+  used in: V1 (new "Golden Hour" redesign) — props: `message: string`
 - `TypedPhrases.tsx` — glass-morphism card (own section, sits right after the
   countdown) with a pulsing gold heart above a large italic serif line that
   types itself out character-by-character, pauses, deletes, and loops to the
@@ -89,11 +117,19 @@ unaware of the array shape.
 
 - `Simple.tsx` — flat row of digits, no card/border, rose color scheme,
   hydration-safe (`useSyncExternalStore`, static zero snapshot on server/first
-  paint) — used in: V1 — props: `specialDate: string`, `label?: string`
+  paint) — used in: V1 (old rose/burgundy template, pre-"Golden Hour"
+  redesign) — props: `specialDate: string`, `label?: string`
 - `GlassCards.tsx` — glass-morphism bordered tiles overlapping into the hero
   (negative margin), gold border, serif numerals, scale-pulse on each tick,
   hydration-safe (same pattern as `countdown/Simple`) — used in: V2 — props:
   `specialDate: string`, `label?: string`
+- `SunflowerCountdown.tsx` — V1 "Golden Hour" counterpart to `GlassCards.tsx`:
+  same elapsed-time math and per-tick digit scale-pop, but warm cream cards
+  with a rose-gold border and a small pulsing sunflower-bloom marker (own
+  local bezier-petal construction) above each digit instead of a plain top
+  edge, hydration-safe (same `useSyncExternalStore` pattern as `GlassCards`)
+  — used in: V1 (new "Golden Hour" redesign) — props: `specialDate: string`,
+  `label?: string` (default `"Blooming since"`)
 
 ## timeline/
 
@@ -103,6 +139,22 @@ unaware of the array shape.
   container rather than returning `null` outright — its `useScroll(target)` ref
   must stay attached to a real DOM node on every render, or Framer Motion throws
   ("Target ref is defined but not hydrated") — used in: V2 — props:
+  `milestones?: { date: string; title: string; description?: string }[]`
+- `SunsetTimeline.tsx` — V1 "Golden Hour" redesign's Section 4.5 (sits between
+  `gallery/SunlitPolaroids.tsx` and `countdown/SunflowerCountdown.tsx`), ported
+  from Aceternity's Timeline component rather than built from scratch like
+  `VerticalLine.tsx` — deliberately not sharing any code with that file despite
+  both being scroll-animated milestone timelines, per the V1/V2 file-separation
+  rule. Sticky date label alongside a small sunflower petal-path marker
+  (own local bezier-petal construction, cream circular backing plate) at each
+  milestone, entry content in a warm cream card (rose-gold border, soft
+  warm-toned shadow — same paper/card language as `message/SealedLetter.tsx`),
+  a terracotta-to-rose-gold vertical progress line over a soft dusty-rose
+  static track that draws in via `useScroll`/`useTransform` height + opacity
+  as the section scrolls into view. No background of its own (transparent, like
+  every other V1 section post-page-level-gradient). Same "stay attached to a
+  real DOM node" empty-state pattern as `VerticalLine.tsx` when there are no
+  milestones — used in: V1 (new "Golden Hour" redesign) — props:
   `milestones?: { date: string; title: string; description?: string }[]`
 
 ## places/
@@ -129,8 +181,26 @@ Mood/atmosphere layers — decorative, not functional UI or narrative content.
   hydration-safe (`useSyncExternalStore`, empty list on server/first paint,
   randomized client-only layout after); containment (page-wide vs. hero-only) is
   controlled by whichever component mounts it, not by the component itself — used
-  in: V1 (page-wide), V2 (hero-scoped, via `hero/CinematicVideo`) — props:
-  `count?: number` (default 18), `color?: string` (default `"pink"`)
+  in: V1 (old rose/burgundy template, page-wide), V2 (hero-scoped, via
+  `hero/CinematicVideo`) — props: `count?: number` (default 18), `color?:
+  string` (default `"pink"`)
+- `FloatingHeartsV1.tsx` — V1-exclusive fork of `FloatingHearts.tsx`, created to
+  fix an earlier file-sharing violation (`FloatingHearts.tsx` was being imported
+  by both templates). Same drifting-heart mechanics and hydration-safe pattern;
+  kept free to diverge from the original — used in: V1 (new "Golden Hour"
+  redesign, not yet wired in) — props: same as `FloatingHearts.tsx`
+- `GoldenSkySection.tsx` — V1 "Golden Hour" redesign's Section 2 (the "wow"
+  moment, V1's counterpart to `NightSky.tsx`): deep peach-to-terracotta gradient
+  sky, a pulsing centered sun glow, 3 drifting cloud shapes (seeded-PRNG
+  positions, same technique as `NightSky.tsx`'s clouds but a local
+  reimplementation), drifting/falling sunflower petals (own local bezier-petal
+  construction, colored to match the Lottie below), and the real
+  `public/animations/sunflower.json` Lottie — unfiltered, full native color —
+  as the section's large centerpiece, confirmed via direct JSON inspection to
+  be a genuinely seamless loop. Centered caption + the couple's special date in
+  large serif terracotta (UTC-based formatting, same reasoning as
+  `NightSky.tsx`) — used in: V1 (new "Golden Hour" redesign, not yet wired into
+  `AnniversaryV1.tsx`) — props: `specialDate: string`
 - `CursorGlow.tsx` — soft 400px radial gold glow (opacity 0.08) that follows the
   cursor with a spring lag, desktop-only (`(pointer: fine)` check via
   `useSyncExternalStore`, renders `null` on touch devices), rendered as a `z-0`
@@ -192,3 +262,14 @@ Site-wide fixed UI utilities the visitor acts on — distinct from `ambient/`
   SVG heart that draws then fills on scroll into view, fades to a darker gradient
   at the page's bottom edge — used in: V2 — props: `people: SitePerson[]`,
   `groupTitle?: string`, `closingLine?: string`
+- `SunsetSignature.tsx` — V1 "Golden Hour" counterpart to `Signature.tsx`: same
+  closing-line + handwritten-signature-heading structure (ampersands accented in
+  terracotta), but in place of the drawn-heart SVG, the closing visual beat is
+  the real `sunflower.json` Lottie at a smaller scale, unfiltered/full native
+  color — deliberately the same treatment as `ambient/GoldenSkySection.tsx`'s
+  centerpiece, so the template's opening "wow" and closing beat visually rhyme.
+  Fades to a deep dusk terracotta (`#6b4332`) at the page's bottom edge rather
+  than `Signature.tsx`'s near-black, staying in the warm family to the last
+  pixel — used in: V1 (new "Golden Hour" redesign, not yet wired into
+  `AnniversaryV1.tsx`) — props: `people: SitePerson[]`, `groupTitle?: string`,
+  `closingLine?: string`

@@ -2,23 +2,34 @@
 
 import { motion } from "framer-motion";
 import Lottie from "lottie-react";
+import Image from "next/image";
 import { useRef, useSyncExternalStore } from "react";
+
+import { formatPeopleHeading } from "@/lib/people";
+import type { SitePerson, SitePhoto } from "@/types/site";
 
 import sunflowerAnimation from "@/public/animations/sunflower.json";
 
 // V1 "Golden Hour / Sunset" design system — same palette established in
 // hero/SunsetHero.tsx. Deliberately distinct from V2's dark "Night Sky"
 // palette; this file is self-contained (its own copies of the seeded-PRNG,
-// cloud, and date-formatting techniques, not imports) so it never becomes a
-// file shared with AnniversaryV2.tsx, per the V1/V2 file-separation rule.
-//   Background : muted peach -> warm gold -> deeper terracotta "horizon"
+// cloud, petal-path, and date-formatting techniques, not imports) so it
+// never becomes a file shared with AnniversaryV2.tsx, per the V1/V2
+// file-separation rule.
+//   Background : this section has no background of its own — see the
+//                comment above templates/AnniversaryV1.tsx's <main>, which
+//                paints V1_BACKGROUND_GRADIENT exactly once across the
+//                whole page
 //   Primary    : terracotta/coral #d97a5f
 //   Secondary  : dusty rose #d4919a
 //   Metallic   : rose gold #c9a68a / muted gold #b8935f
 //   Text       : warm dark brown #4a2f26
 
 interface GoldenSkySectionProps {
+  people: SitePerson[];
+  groupTitle?: string;
   specialDate: string;
+  photos: SitePhoto[];
 }
 
 // Deterministic PRNG (mulberry32) — same fixed seed always produces the same
@@ -86,33 +97,148 @@ function CloudShape({ cloud }: { cloud: Cloud }) {
   );
 }
 
-// Glowing sun, centered high as the section's focal point — a wide, faint
-// halo behind a brighter core, the same two-layer treatment from
-// hero/SunsetHero.tsx's corner sun, just recentered and given a continuous
-// gentle pulse (the hero's version is static; this section's is the "wow"
-// piece, so it breathes).
+// The sun itself — redesigned for a more cinematic/romantic read than the
+// old single-flat-gradient disc + straight rays. Four layers, widest/softest
+// to smallest/sharpest:
+//   1. an outer bloom, wide and heavily blurred, that gently bleeds into the
+//      page background rather than stopping at a hard edge
+//   2. a pulsing mid-glow halo
+//   3. the disc itself, now an off-center multi-stop radial gradient (highlight
+//      pushed toward the upper-left of the disc at 35%/30%, not dead-center)
+//      so it reads as a lit sphere, not a flat painted circle, plus a two-layer
+//      box-shadow (tight bright glow + a wider, softer amber bleed) instead of
+//      one shadow — that second, wider shadow layer is what actually produces
+//      the "warm bloom around the light source" effect close to the disc,
+//      complementing layer 1's much larger/softer version of the same idea
+//   4. a very soft secondary rim-light pass behind the disc for extra depth
+// Positioned above where SunflowerCenterpiece renders below, so the light
+// visually originates above the big Lottie bloom rather than behind it.
 function Sun() {
   return (
     <>
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-[2%] h-[420px] w-[420px] -translate-x-1/2 rounded-full blur-3xl sm:h-[560px] sm:w-[560px]"
+        className="pointer-events-none absolute left-1/2 top-[-4%] h-[560px] w-[560px] -translate-x-1/2 rounded-full blur-3xl sm:h-[760px] sm:w-[760px]"
         style={{
           background:
-            "radial-gradient(circle, rgba(253,240,216,0.32) 0%, rgba(253,240,216,0) 70%)",
+            "radial-gradient(circle, rgba(255,247,224,0.42) 0%, rgba(253,213,150,0.2) 45%, rgba(253,213,150,0) 75%)",
         }}
       />
       <motion.div
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-[7%] h-[220px] w-[220px] -translate-x-1/2 rounded-full blur-2xl sm:h-[300px] sm:w-[300px]"
+        className="pointer-events-none absolute left-1/2 top-[4%] h-[260px] w-[260px] -translate-x-1/2 rounded-full blur-2xl sm:h-[360px] sm:w-[360px]"
         style={{
           background:
-            "radial-gradient(circle, rgba(253,240,216,0.65) 0%, rgba(253,240,216,0.3) 45%, rgba(253,240,216,0) 72%)",
+            "radial-gradient(circle, rgba(253,225,170,0.7) 0%, rgba(249,178,96,0.34) 45%, rgba(249,178,96,0) 74%)",
         }}
-        animate={{ opacity: [0.7, 1, 0.7], scale: [1, 1.05, 1] }}
-        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+        animate={{ opacity: [0.65, 1, 0.65], scale: [1, 1.1, 1] }}
+        transition={{ duration: 6.5, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        aria-hidden="true"
+        className="pointer-events-none absolute left-1/2 top-[6%] h-[130px] w-[130px] -translate-x-1/2 rounded-full blur-md sm:h-[180px] sm:w-[180px]"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(255,250,240,0.5) 0%, rgba(253,225,170,0.22) 55%, rgba(253,225,170,0) 80%)",
+        }}
+        animate={{ opacity: [0.6, 0.9, 0.6] }}
+        transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.4 }}
+      />
+      <motion.div
+        aria-hidden="true"
+        className="pointer-events-none absolute left-1/2 top-[5%] h-[92px] w-[92px] -translate-x-1/2 rounded-full sm:h-[134px] sm:w-[134px]"
+        style={{
+          background:
+            "radial-gradient(circle at 35% 30%, #fffdf6 0%, #fff3d6 16%, #fde7b8 38%, #f9c97c 64%, #f0a05c 86%, rgba(240,160,92,0) 100%)",
+          boxShadow:
+            "0 0 60px 18px rgba(253,225,170,0.6), 0 0 140px 50px rgba(249,178,96,0.3)",
+        }}
+        animate={{ opacity: [0.88, 1, 0.88] }}
+        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
       />
     </>
+  );
+}
+
+// God-rays fanning down from the sun toward the field below — reworked from
+// a uniform-width straight fan into visibly irregular dappled-light beams:
+// each ray now carries its own length/width/opacity/blur (RAYS below) rather
+// than sharing one shape and only varying its pulse timing, so neighboring
+// rays read as slightly different shafts of light instead of a rigid
+// geometric sunburst. Still a wedge per ray (narrow near the sun, wide at
+// the field, via `clipPath: polygon(...)`) filled with a linear gradient.
+// Fixed values, not random — a deliberate hand-placed fan (same reasoning as
+// CLOUDS elsewhere in this file: needs to look identical every render), so
+// no useSyncExternalStore hydration gating is needed here, unlike PetalDrift
+// below (true client-only Math.random()).
+interface RayConfig {
+  angle: number;
+  length: number;
+  width: number;
+  opacity: number;
+  blur: number;
+  duration: number;
+  delay: number;
+}
+
+// Opacity values roughly doubled+ from the prior pass (0.42-0.7 -> 0.85-1)
+// per this task's "barely perceptible... at least 2x, unmistakable" brief —
+// animate now pulses DOWN from that peak (0.8x-1x of base) rather than up
+// past it, since these bases already sit near the 0-1 ceiling.
+const RAYS: RayConfig[] = [
+  { angle: -34, length: 70, width: 66, opacity: 0.85, blur: 2.5, duration: 5.4, delay: 0 },
+  { angle: -23, length: 88, width: 96, opacity: 1, blur: 1.2, duration: 4.6, delay: 0.35 },
+  { angle: -12, length: 74, width: 58, opacity: 0.92, blur: 2, duration: 5.1, delay: 0.7 },
+  { angle: 0, length: 94, width: 108, opacity: 1, blur: 0.8, duration: 4.2, delay: 0 },
+  { angle: 12, length: 74, width: 58, opacity: 0.92, blur: 2, duration: 5.1, delay: 0.55 },
+  { angle: 23, length: 88, width: 96, opacity: 1, blur: 1.2, duration: 4.6, delay: 0.2 },
+  { angle: 34, length: 70, width: 66, opacity: 0.85, blur: 2.5, duration: 5.4, delay: 0.5 },
+];
+
+function LightRays() {
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+      {RAYS.map((ray, i) => (
+        <motion.div
+          key={i}
+          className="absolute left-1/2 top-[8%]"
+          style={{
+            height: `${ray.length}%`,
+            width: ray.width,
+            transformOrigin: "top center",
+            transform: `translateX(-50%) rotate(${ray.angle}deg)`,
+            clipPath: "polygon(44% 0%, 56% 0%, 100% 100%, 0% 100%)",
+            background: `linear-gradient(to bottom, rgba(255,244,218,${ray.opacity}) 0%, rgba(253,213,150,${ray.opacity * 0.6}) 42%, rgba(253,213,150,${ray.opacity * 0.22}) 76%, rgba(253,213,150,0) 100%)`,
+            filter: `blur(${ray.blur}px)`,
+          }}
+          animate={{ opacity: [ray.opacity * 0.8, ray.opacity, ray.opacity * 0.8] }}
+          transition={{
+            duration: ray.duration,
+            delay: ray.delay,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// The warm pool of light where the rays above "land" — positioned at the
+// bottom of the section, grounding the light effect so the rays read as
+// shining down onto something rather than trailing off into nothing.
+function FieldGlowPool() {
+  return (
+    <motion.div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-x-0 bottom-0 h-[38%]"
+      style={{
+        background:
+          "radial-gradient(ellipse at bottom, rgba(253,196,120,0.38) 0%, rgba(253,196,120,0.14) 45%, rgba(253,196,120,0) 78%)",
+      }}
+      animate={{ opacity: [0.75, 1, 0.75] }}
+      transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+    />
   );
 }
 
@@ -221,10 +347,47 @@ interface DriftingPetal {
 
 const PETAL_COUNT = 10;
 
+// Excludes spawn positions from the center horizontal band (20%-80% of the
+// section's full width) where the love-note/sunflower/photo row lives — the
+// bug this fixes: petals fall through the ENTIRE section height on every
+// loop, so any petal whose `left%` lands under that row will sooner or
+// later drift straight across it; since the row's own background is
+// transparent (only the actual text glyphs/photo/sunflower art are opaque),
+// a petal there is genuinely visible in the whitespace around them, not
+// actually clipped by anything, even though it's correctly behind them in
+// z-order. Keeping spawns out of that band entirely (not just gated to the
+// row's specific vertical slice) is a deliberately simpler fix than
+// per-frame vertical/horizontal coupling, and works because the row sits
+// well inside the petals' full top-to-bottom fall path regardless.
+// left% is relative to the section's full width, not the row's own
+// (narrower, centered) max-w-4xl box — 20%-80% is a hand-picked
+// approximation wide enough to clear the row on typical desktop viewports,
+// not a pixel-exact measurement (same hand-tuned-constant approach as
+// RAYS elsewhere in this file).
+const PETAL_EXCLUDE_BAND: [number, number] = [20, 80];
+const PETAL_ALLOWED_RANGES: [number, number][] = [
+  [0, PETAL_EXCLUDE_BAND[0]],
+  [PETAL_EXCLUDE_BAND[1], 100],
+];
+
+function randomPetalLeft(): number {
+  const widths = PETAL_ALLOWED_RANGES.map(([start, end]) => end - start);
+  const total = widths.reduce((sum, w) => sum + w, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < PETAL_ALLOWED_RANGES.length; i++) {
+    if (r < widths[i]) {
+      return PETAL_ALLOWED_RANGES[i][0] + r;
+    }
+    r -= widths[i];
+  }
+  const last = PETAL_ALLOWED_RANGES[PETAL_ALLOWED_RANGES.length - 1];
+  return last[0] + (last[1] - last[0]) * Math.random();
+}
+
 function randomPetal(id: number): DriftingPetal {
   return {
     id,
-    left: Math.random() * 100,
+    left: randomPetalLeft(),
     size: 10 + Math.random() * 10,
     duration: 11 + Math.random() * 9,
     delay: -(Math.random() * 14),
@@ -267,6 +430,14 @@ function fallingPetalPath(length: number, width: number): string {
 // a breeze moving through the field. Same useSyncExternalStore hydration
 // pattern as LightMotes above and ambient/FloatingHeartsV1.tsx: empty on
 // server/first paint, randomized client-only layout after.
+//
+// Explicit z-0 and rendered FIRST in GoldenSkySection's return below (ahead
+// of Sun/Clouds/Field/Motes, not just ahead of the z-10 content column) —
+// the lowest layer, just above the bare page background — per this task's
+// fix: petals need to stay behind everything else in this section, not just
+// the text/photo/sunflower specifically. Combined with randomPetalLeft's
+// spawn exclusion band above, this keeps them fully in the background
+// rather than visually crossing the row.
 function PetalDrift() {
   const cacheRef = useRef<DriftingPetal[] | null>(null);
 
@@ -282,7 +453,7 @@ function PetalDrift() {
   );
 
   return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
       {petals.map((petal) => (
         <motion.div
           key={petal.id}
@@ -328,6 +499,79 @@ function PetalDrift() {
   );
 }
 
+// Two flanking accents either side of the big Lottie centerpiece below —
+// replaces an earlier pass's two decorative icon silhouettes (envelope,
+// photo-frame), which read as inert clip-art rather than adding anything.
+// Real content instead:
+//   left  — a short love-note line, styled as a smaller/lighter sibling of
+//           CAPTION below (same font-display italic, same warm-brown tone,
+//           text-sm/base against CAPTION's base/lg) tying together the
+//           sunflower/sun/butterfly motifs already on screen
+//   right — one real customer photo (PhotoAccent), not a placeholder —
+//           same SitePhoto shape / `photos` prop pattern gallery/
+//           SunlitPolaroids.tsx and timeline/SunsetTimeline.tsx already use,
+//           passed down from templates/AnniversaryV1.tsx
+// Both purely decorative (no onClick/href), sized to match each other
+// exactly (260px, see ROW_ITEM_WIDTH below) — comparable in footprint to
+// the 256px centerpiece by design, so the three form one balanced row
+// rather than a big flower with two small afterthoughts either side.
+//
+// Options considered for the note line before picking one:
+//   "A sunflower doesn't choose to turn toward the sun — it just does. That's
+//   how I found you." — good idea, slightly clunky rhythm across two
+//   sentences for a text this small.
+//   "Even the butterflies know: some blooms are worth chasing the light
+//   for." — nice but leaves the sunflower-follows-sun half of the metaphor
+//   implicit rather than stated.
+// Went with the line below: one unbroken sentence, all three motifs present
+// (sunflower/sun turning, butterfly finding its bloom), landing on direct
+// address like CAPTION's "so did we" does.
+const LOVE_NOTE = "A sunflower turns for the sun, a butterfly finds its bloom — I was always going to find my way to you.";
+
+// Shared fixed width for both flanking pieces (text block and photo) — the
+// exact same value on both sides is what makes them read as one balanced
+// row rather than two differently-sized afterthoughts either side of the
+// sunflower. max-w-[78vw] is purely a narrow-viewport guard (this value
+// only matters once the row goes horizontal at lg:, see GoldenSkySection's
+// return below, well past any width where 78vw would actually bind).
+const ROW_ITEM_WIDTH = "w-[260px] max-w-[78vw]";
+
+function LoveNoteAccent() {
+  return (
+    <p className={`font-display mx-auto text-center text-sm italic leading-snug text-[#6b4332]/85 sm:text-base ${ROW_ITEM_WIDTH}`}>
+      {LOVE_NOTE}
+    </p>
+  );
+}
+
+// One real customer photo, framed to match gallery/SunlitPolaroids.tsx's
+// own polaroid card treatment (cream bg + thicker-bottom padding standing
+// in for the frame, not a border-only outline): rounded-2xl (16px) outer
+// corners, a thin warm hairline (border-[#e8c4b0], same token that file
+// uses) plus a soft warm-brown drop shadow, and a 3-degree rotation for a
+// candid/tossed-down feel rather than a rigidly aligned rectangle. Fixed-
+// size `fill` + aspect-[4/3] box rather than SunlitPolaroids' own intrinsic-
+// dimension lookup — this is a single uniform accent slot, not a gallery
+// grid preserving each photo's real aspect ratio.
+function PhotoAccent({ photo }: { photo: SitePhoto }) {
+  return (
+    <div
+      className={`rounded-2xl border border-[#e8c4b0] bg-[#fdf6ec] p-[9px] pb-6 shadow-xl shadow-[#6b4332]/25 ${ROW_ITEM_WIDTH}`}
+      style={{ transform: "rotate(3deg)" }}
+    >
+      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-[#e8c4b0]">
+        <Image
+          src={photo.src}
+          alt={photo.caption ?? "A memory together"}
+          fill
+          sizes="260px"
+          className="object-cover"
+        />
+      </div>
+    </div>
+  );
+}
+
 // The section's signature focal element — V1's counterpart to V2's
 // constellation heart. The actual LottieFiles "Sunflower" animation
 // (public/animations/sunflower.json), not a custom SVG recreation. Checked
@@ -338,6 +582,8 @@ function PetalDrift() {
 // wrapping <motion.div> still handles the section's own reveal-on-scroll
 // beat (fade + scale up slightly, matching every other reveal in this
 // file), separate from the Lottie's own continuous breeze-loop playback.
+// Sits inside the z-10 content column, so it always paints above
+// FieldGlowPool/LightRays/Sun below regardless of DOM order.
 function SunflowerCenterpiece() {
   return (
     <motion.div
@@ -387,31 +633,131 @@ function formatSpecialDate(iso: string): string {
 // templates' "wow" sections.
 const CAPTION = "The sky held its breath, and so did we.";
 
-export default function GoldenSkySection({ specialDate }: GoldenSkySectionProps) {
+// This section has no background of its own — every V1 section's own
+// background is transparent, and templates/AnniversaryV1.tsx paints
+// V1_BACKGROUND_GRADIENT exactly once across the whole page instead (a
+// single gradient spanning the full stacked page height, not seven
+// independent copies of the same gradient restarting at every section
+// boundary — the latter still produces a hard seam at each boundary even
+// when the value is identical, since each section's own bottom would be
+// the gradient's darkest stop sitting directly above the next section's
+// own top, its lightest stop).
+//
+// Layer order (back to front): PetalDrift (z-0, explicit — moved to the
+// very front of the DOM order and given its own z-0 so it's unambiguously
+// the lowest layer, just above the bare page background) -> Sun ->
+// LightRays -> Clouds -> FieldGlowPool -> LightMotes -> the z-10 content
+// column (couple names, caption, the love-note/centerpiece/photo row,
+// date). Everything between PetalDrift and the content column has no
+// explicit z-index, so paint order among THEM still follows plain DOM
+// order; the content column's z-10 keeps it on top of all of them
+// regardless. This keeps petals fully in the background and clouds
+// reading further back than the sun/rays' own glow.
+//
+// The sunflower field row that used to ground this section's bottom edge
+// (FieldFlowerConfig/FIELD_FLOWERS/SunflowerField, plus the local
+// petalPath/leafPath/SunflowerSvg it depended on) was removed — it now
+// lives in hero/SunsetHero.tsx instead (added there once this section
+// stopped needing its own copy), so having it in both sections would've
+// been redundant. FieldGlowPool stays: it's part of the sun/light-ray
+// effect (the warm pool the rays visually "land" in), not the field
+// itself, so it's unaffected by the field's removal.
+export default function GoldenSkySection({ people, groupTitle, specialDate, photos }: GoldenSkySectionProps) {
+  const accentPhoto = photos[0];
+  const heading = formatPeopleHeading(people, groupTitle);
+
   return (
-    <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-[#faf1e4] via-[#f2caa6] to-[#e0a173] px-6 py-[120px]">
+    <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 py-[120px]">
+      <PetalDrift />
+
       <Sun />
+      <LightRays />
 
       {CLOUDS.map((cloud) => (
         <CloudShape key={cloud.id} cloud={cloud} />
       ))}
 
-      <LightMotes />
-      <PetalDrift />
+      <FieldGlowPool />
 
-      <div className="relative z-10 mx-auto flex max-w-lg flex-col items-center text-center">
+      <LightMotes />
+
+      {/* Widened from the old max-w-lg to max-w-4xl so the row below (two
+          260px flanking pieces + the 256px centerpiece + gaps, ~840px at
+          its widest) has room to actually lay out horizontally without
+          overflowing its own container — CAPTION/the date below keep the
+          narrower max-w-lg reading width individually instead, so this
+          widening only affects the row, not paragraph line length. */}
+      <div className="relative z-10 mx-auto flex w-full max-w-4xl flex-col items-center text-center">
+        {/* This section now opens the page (see templates/AnniversaryV1.tsx's
+            section order), so it needs its own "whose site is this" beat —
+            names first, then the atmospheric quote below, same reading
+            order hero/SunsetHero.tsx's own heading->subtitle->divider used
+            when it opened the page. Same font-display family/weight/color
+            as Hero's h1 (font-normal, #4a2f26), deliberately one step down
+            in scale (4xl/5xl/6xl vs Hero's 5xl/6xl/7xl) — this section
+            already has the sun/rays/love-note/photo competing for
+            attention, so the names read as an opening beat here rather
+            than the single dominant focal point Hero itself gave them. */}
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.6 }}
+          transition={{ duration: 1, ease: "easeOut" }}
+          className="font-display text-4xl font-normal text-[#4a2f26] sm:text-5xl md:text-6xl"
+        >
+          {heading}
+        </motion.h1>
+
         <motion.p
           initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.6 }}
-          transition={{ duration: 0.9, ease: "easeOut" }}
-          className="font-display text-base italic text-[#4a2f26]/80 sm:text-lg"
+          transition={{ duration: 0.9, ease: "easeOut", delay: 0.2 }}
+          className="font-display mt-4 max-w-lg text-base italic text-[#4a2f26]/80 sm:text-lg"
         >
           {CAPTION}
         </motion.p>
 
-        <div className="mt-10 flex justify-center">
+        {/* The row: stacked (flex-col) below lg so three ~260-280px-wide
+            pieces never have to squeeze into a narrow viewport; becomes one
+            true horizontal row at lg (1024px+), where max-w-4xl's 896px
+            comfortably fits the ~840px-wide row with margin to spare.
+            lg:-mt-12 on the two flanking wrappers pulls their own vertical
+            center up off the row's plain flex `items-center` line (which
+            would otherwise align them to the centerpiece's full stem-to-
+            bloom box center) to sit level with the sunflower BLOOM's own
+            center instead — the centerpiece art reads top-heavy (bloom
+            occupying roughly its top ~60%, stem/leaves the rest), so the
+            bloom's own vertical center sits noticeably above the full box's
+            midpoint; -mt-12 (48px, close to 256px * 0.2) is a hand-tuned
+            approximation of that gap, not a pixel-measured one — the same
+            hand-tuned-constant approach as RAYS elsewhere in this file,
+            since there's no runtime way to introspect exactly
+            where within the Lottie's own bounding box the bloom sits. */}
+        <div className="mt-10 flex w-full flex-col items-center gap-8 lg:flex-row lg:items-center lg:justify-center lg:gap-10">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{ duration: 0.8, ease: "easeOut", delay: 0.15 }}
+            className="flex justify-center lg:-mt-12"
+          >
+            <LoveNoteAccent />
+          </motion.div>
+
           <SunflowerCenterpiece />
+
+          {accentPhoto && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.5 }}
+              transition={{ duration: 0.8, ease: "easeOut", delay: 0.15 }}
+              className="flex justify-center lg:-mt-12"
+            >
+              <PhotoAccent photo={accentPhoto} />
+            </motion.div>
+          )}
         </div>
 
         <motion.p
@@ -419,7 +765,7 @@ export default function GoldenSkySection({ specialDate }: GoldenSkySectionProps)
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.6 }}
           transition={{ duration: 0.9, ease: "easeOut", delay: 0.3 }}
-          className="font-display mt-8 text-3xl font-medium text-[#d97a5f] sm:text-4xl"
+          className="font-display mt-8 max-w-lg text-3xl font-medium text-[#d97a5f] sm:text-4xl"
         >
           {formatSpecialDate(specialDate)}
         </motion.p>

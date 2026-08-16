@@ -32,6 +32,7 @@ export interface SiteData {
     date: string;
     title: string;
     description?: string;
+    photo?: string;
   }[];
   closingLine?: string;
   secretNote?: string;

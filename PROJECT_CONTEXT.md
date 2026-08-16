@@ -97,8 +97,18 @@ read as clearly distinct from V2's night-sky/heart motifs.
   took several failed attempts at custom SVG burst/mandala effects before
   landing on the actual Lottie file (see Section 6 and the "hand-coded vs.
   Lottie" note below).
-- **Sections 3-6 (StoryLetter, Gallery, Countdown, ClosingSignature) — not yet
-  built for V1.**
+- **Sections 3-6 — done.** `message/SealedLetter.tsx` (letter card on warm
+  cream paper, terracotta drop cap, small sunflower-bloom "wax seal"
+  medallion in place of V2's envelope-and-crack icon), `gallery/
+  SunlitPolaroids.tsx` (scrapbook/polaroid grid — tilted cream-bordered
+  cards, washi-tape corners — instead of V2's formal Museum Wall),
+  `countdown/SunflowerCountdown.tsx` (same elapsed-time math and per-tick
+  digit pop as V2's `GlassCards`, warm cream cards with a pulsing bloom
+  marker per digit), `closing/SunsetSignature.tsx` (handwritten-signature
+  heading, closing beat is the real `sunflower.json` Lottie at small scale —
+  unfiltered, same treatment as GoldenSkySection's centerpiece, so the
+  template's opening and closing "wow" moments visually rhyme). All 4 have
+  standalone `/preview/*` routes for isolated review, same as Sections 1-2.
 - **Key learning:** complex generative/procedural animations built from
   scratch in SVG + Framer Motion (shooting stars, bird wing-flaps, burst
   effects) repeatedly fell short of quality expectations after multiple
@@ -137,14 +147,14 @@ client-dynamic component (clocks, live counters, randomized layouts).
 
 ## 9. Next Steps
 
-1. Confirm the SunsetHero field revert (silhouette-only, no Lottie sunflowers
-   mixed in) looks right.
-2. Build V1 Sections 3-6.
-3. Integrate all 6 V1 sections into `AnniversaryV1.tsx` and do a full-page
-   scroll-through review.
-4. Apply the same V1 sunset palette treatment to the homepage template card
+1. Integrate all 6 V1 sections into `AnniversaryV1.tsx` (currently still
+   wired to the old rose/burgundy components) and do a full-page
+   scroll-through review — including cross-section background-gradient
+   transitions, since each section was built/reviewed standalone via its
+   own `/preview/*` route and hasn't been checked back-to-back yet.
+2. Apply the same V1 sunset palette treatment to the homepage template card
    thumbnail, if needed.
-5. **Push to GitHub — not yet pushed this session, priority.**
-6. Production Vercel deploy.
-7. Cloudinary setup for real customer photo uploads.
-8. Birthday category template.
+3. **Push to GitHub — not yet pushed this session, priority.**
+4. Production Vercel deploy.
+5. Cloudinary setup for real customer photo uploads.
+6. Birthday category template.

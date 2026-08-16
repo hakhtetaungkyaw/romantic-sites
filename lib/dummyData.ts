@@ -26,6 +26,30 @@ const galleryPhotos: SitePhoto[] = [
     src: "/demo-assets/photos/couple-06.jpg",
     caption: "Lifted higher than the evening itself.",
   },
+  {
+    src: "/demo-assets/photos/couple-07.jpg",
+    caption: "Lifted higher than the evening itself.",
+  },
+  {
+    src: "/demo-assets/photos/couple-08.jpg",
+    caption: "Lifted higher than the evening itself.",
+  },
+  {
+    src: "/demo-assets/photos/couple-09.jpg",
+    caption: "Lifted higher than the evening itself.",
+  },
+  {
+    src: "/demo-assets/photos/couple-10.jpg",
+    caption: "Lifted higher than the evening itself.",
+  },
+  {
+    src: "/demo-assets/photos/couple-11.jpg",
+    caption: "Lifted higher than the evening itself.",
+  },
+  {
+    src: "/demo-assets/photos/couple-12.jpg",
+    caption: "Lifted higher than the evening itself.",
+  },
 ];
 
 export const dummySiteData: SiteData = {
@@ -46,23 +70,29 @@ export const dummySiteData: SiteData = {
       title: "The day we met",
       description:
         "A rainy afternoon, a shared umbrella, and a conversation that lasted until midnight.",
+      photo: "/demo-assets/photos/couple-01.jpg",
     },
     {
       date: "November 2022",
       title: "First trip together",
       description:
         "Three weeks backpacking through the coast, running out of money and out of reasons to leave.",
+      photo: "/demo-assets/photos/couple-11.jpg",
     },
     {
       date: "August 2024",
       title: "Moved in together",
       description:
         "A tiny apartment with a leaky faucet that somehow felt like the biggest home we'd ever had.",
+      // Deliberately no `photo` — exercises timeline/SunsetTimeline.tsx's
+      // text-only fallback for milestones without one, alongside the 3
+      // that do have one.
     },
     {
       date: "June 2026",
       title: "The proposal",
       description: "Under the same rain, on the same street, four years later.",
+      photo: "/demo-assets/photos/couple-05.jpg",
     },
   ],
   closingLine: "And every day since has been another page we get to write together.",

@@ -11,8 +11,7 @@ const NAV_LINKS = [
   { href: "#contact", id: "contact", label: "Contact" },
 ];
 
-// TODO: replace with the real TikTok handle.
-const TIKTOK_URL = "https://tiktok.com/@VOWX_PLACEHOLDER";
+const TIKTOK_URL = "https://www.tiktok.com/@vowxteam";
 const TELEGRAM_URL = "https://t.me/vowxteam";
 
 export default function Nav() {

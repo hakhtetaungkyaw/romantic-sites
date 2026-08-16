@@ -35,7 +35,7 @@ model Order {
   videos          Json? // array of { src, caption?, role? } — e.g. role: "hero" | "moment"
   songs           Json? // array of { url, title }
   secretMessage   String?  @db.Text
-  milestones      Json?
+  milestones      Json? // array of { date, title, description?, photo? }
   places          Json?
   // Escape hatch for genuinely new, template-specific data that doesn't fit
   // an existing field yet. Not a dumping ground — if a field turns out to be

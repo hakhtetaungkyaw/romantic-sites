@@ -5,6 +5,13 @@ import Lottie, { type LottieRefCurrentProps } from "lottie-react";
 import { useRef, useSyncExternalStore } from "react";
 
 import { formatPeopleHeading } from "@/lib/people";
+import {
+  BUTTERFLY_FILTER_CORAL,
+  BUTTERFLY_FILTER_DUSTY_ROSE,
+  BUTTERFLY_FILTER_GOLD,
+  BUTTERFLY_FILTER_TERRACOTTA,
+} from "@/lib/v1ButterflyFilters";
+import { SUNFLOWER_CENTER_COLOR, SUNFLOWER_PETAL_COLOR } from "@/lib/v1SunflowerColors";
 import type { SitePerson } from "@/types/site";
 
 import butterflyAnimation from "@/public/animations/butterfly.json";
@@ -13,9 +20,10 @@ import butterflyAnimation from "@/public/animations/butterfly.json";
 // across all V1 components in later phases. Deliberately distinct from V2's
 // dark "Night Sky" palette; no file here is shared with or imported by
 // AnniversaryV2.tsx.
-//   Background : muted peach -> dusty rose-tan -> warm cream,
-//                #f5ddd0 -> #e8c4b0 -> #f0e0d0 (desaturated — no pure
-//                orange/coral; reads as soft elegant light, not "candy")
+//   Background : this section has no background of its own — see the
+//                comment above templates/AnniversaryV1.tsx's <main>, which
+//                paints V1_BACKGROUND_GRADIENT (lib/v1SectionGradients.ts)
+//                exactly once across the whole page
 //   Primary    : terracotta/coral #d97a5f
 //   Secondary  : dusty rose #d4919a
 //   Metallic   : rose gold #c9a68a (distinct from V2's champagne gold #d4af7a)
@@ -143,33 +151,13 @@ interface ButterflyConfig {
   times: number[];
 }
 
-// public/animations/butterfly.json ships in deep blue/indigo (~hue 230°,
-// like a Morpho butterfly) — off-palette for this warm sunset template. CSS
-// hue-rotate() is NOT a plain HSL hue shift; browsers implement it as the
-// SVG feColorMatrix luma-preserving matrix, so a naive "target - source"
-// degree estimate lands noticeably off. Values below were derived by
-// simulating that exact matrix (plus the saturate()/brightness() that
-// follow it in the chain) against the animation's actual sampled fill
-// colors (#3a4280, #6978b5, #2e376d) and checking the resulting hue/hex
-// directly. First pass used saturate(1.5-1.6)/brightness(1.2-1.3), which
-// landed on hue correctly but read as candy-pink/magenta — too saturated
-// and too bright. This pass uses saturate(0.6) and brightness(0.95), which
-// suppresses vividness enough to read as muted coral/dusty-rose/terracotta/
-// gold rather than a lit-up cartoon wing, while the hue-rotate angles were
-// re-picked so the four land specifically on those tones (checked against
-// each target's actual HSL hue, not eyeballed):
-//   coral       (~#d97a5f, hue 13°)  -> hue-rotate(130deg) -> output hue ~9-13°,  e.g. #936b64
-//   dusty rose  (~#d4919a, hue 352°) -> hue-rotate(110deg) -> output hue ~351-354°, e.g. #966970
-//   terracotta  (~#c17f5f, hue 20°)  -> hue-rotate(145deg) -> output hue ~20-24°, e.g. #8e6d5d
-//   muted gold  (~#c9a68a, hue 27°)  -> hue-rotate(155deg) -> output hue ~28-31°, e.g. #8a6f58
-// Results run darker than the reference hexes (the source Lottie's base
-// color is a dark navy, and saturate(0.6) is luma-preserving, not
-// lightness-boosting) but land exactly on the requested hues with zero
-// pink/magenta.
-const BUTTERFLY_FILTER_CORAL = "hue-rotate(130deg) saturate(0.6) brightness(0.95)"; // -> ~#936b64
-const BUTTERFLY_FILTER_DUSTY_ROSE = "hue-rotate(110deg) saturate(0.6) brightness(0.95)"; // -> ~#966970
-const BUTTERFLY_FILTER_TERRACOTTA = "hue-rotate(145deg) saturate(0.6) brightness(0.95)"; // -> ~#8e6d5d
-const BUTTERFLY_FILTER_GOLD = "hue-rotate(155deg) saturate(0.6) brightness(0.95)"; // -> ~#8a6f58
+// The 4 muted filter constants (BUTTERFLY_FILTER_*) live in
+// lib/v1ButterflyFilters.ts, shared with message/SealedLetter.tsx — the
+// only other V1 file that renders this same butterfly.json Lottie. See
+// that file for the full derivation (verified via real rendered-pixel
+// sampling, not just simulated color math) and why this one value is
+// extracted to a shared data-layer utility despite V1's usual per-file
+// self-containment convention.
 
 // speed prop on <Lottie> (see Butterflies() below) — independent from the
 // Framer Motion flight-path timing below, which stays untouched. Only the
@@ -336,7 +324,14 @@ function FlappingButterfly({ bf }: { bf: ButterflyConfig }) {
 
 function Butterflies() {
   return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+    // z-[6]: explicit stacking so butterflies always paint above the other
+    // ambient layers in this section (light motes, corner/backdrop glows,
+    // all z-index:auto) regardless of DOM order. Still safely below the
+    // z-10 heading text. (This used to also matter for staying above the
+    // sunflower field that sat at the bottom of this section — removed —
+    // but the explicit z-index is harmless and still correctly applied
+    // now.)
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[6] overflow-hidden">
       {BUTTERFLIES.map((bf, i) => (
         <FlappingButterfly key={i} bf={bf} />
       ))}
@@ -344,11 +339,21 @@ function Butterflies() {
   );
 }
 
-// Pointed teardrop, not a smooth ellipse — narrow-ish base widening quickly
-// then tapering to a sharp tip. This is the difference between "sunflower"
-// and "generic daisy": real petals aren't round bubbles. Drawn in absolute
-// coordinates pointing straight up from (cx, topY), then swept to each
-// angular position via an outer `rotate(angle, cx, cy)` transform.
+// ---- Field flowers: brought back after an earlier task removed this
+// section's own field entirely — this is a verbatim copy of ambient/
+// GoldenSkySection.tsx's current field (petalPath/leafPath/SunflowerSvg/
+// FieldFlowerConfig/FIELD_FLOWERS/SunflowerField, byte-identical logic),
+// not an import, per V1's per-file self-containment convention: component
+// code (anything that renders JSX) stays duplicated per file, only plain
+// data/constants modules — SUNFLOWER_PETAL_COLOR/SUNFLOWER_CENTER_COLOR
+// above, imported from lib/v1SunflowerColors.ts — are ever shared across
+// V1 files. Reusing GoldenSkySection's exact version (rather than Hero's
+// own pre-removal FLOWERS/SunflowerField, which had 16 entries, per-flower
+// sway animation, and 4 golden-highlighted flowers at fixed positions) is
+// what this task asked for specifically: "so both sections' fields look
+// visually consistent" — same silhouette shape, same real sampled-from-
+// the-Lottie SUNFLOWER_PETAL_COLOR/SUNFLOWER_CENTER_COLOR tokens, same
+// 7-flower varying-size arrangement, same h-[26%] bottom band. ----
 function petalPath(cx: number, cy: number, baseOffset: number, length: number, width: number): string {
   const topY = cy - baseOffset;
   const tipY = topY - length;
@@ -358,9 +363,6 @@ function petalPath(cx: number, cy: number, baseOffset: number, length: number, w
   return `M${cx},${topY} C${cx - w},${midY1} ${cx - w * 0.55},${midY2} ${cx},${tipY} C${cx + w * 0.55},${midY2} ${cx + w},${midY1} ${cx},${topY} Z`;
 }
 
-// Simple pointed-oval leaf, pointed at both the stem-attachment base and the
-// tip. Drawn with its base at the local origin so translate+rotate on the
-// caller's transform pivots it exactly at the point where it meets the stem.
 function leafPath(length: number, width: number): string {
   const w = width / 2;
   return `M0,0 Q${w},${-length * 0.45} 0,${-length} Q${-w},${-length * 0.45} 0,0 Z`;
@@ -371,12 +373,14 @@ function SunflowerSvg({
   headSize,
   petalCount,
   leafCount,
+  petalColor,
   className,
 }: {
   stemLength: number;
   headSize: number;
   petalCount: number;
   leafCount: number;
+  petalColor?: string;
   className?: string;
 }) {
   const totalHeight = headSize + stemLength;
@@ -388,9 +392,6 @@ function SunflowerSvg({
   const petalAngles = Array.from({ length: petalCount }, (_, i) => (360 / petalCount) * i);
   const stemBaseY = headSize - headSize * 0.14;
 
-  // Leaves attach at a fixed proportion of the way down the stem (not a
-  // fixed pixel offset), so they sit sensibly whether this particular
-  // flower's stem is short or long, angled outward on alternating sides.
   const leafConfigs = [
     { fraction: 0.4, angle: 35 },
     { fraction: 0.64, angle: -32 },
@@ -426,7 +427,7 @@ function SunflowerSvg({
         );
       })}
 
-      <g fill="currentColor">
+      <g fill={petalColor ?? "currentColor"}>
         {petalAngles.map((angle) => (
           <path
             key={angle}
@@ -434,105 +435,189 @@ function SunflowerSvg({
             transform={`rotate(${angle} ${cx} ${cy})`}
           />
         ))}
-        <circle cx={cx} cy={cy} r={centerRadius} />
       </g>
+      <circle cx={cx} cy={cy} r={centerRadius} fill="currentColor" />
     </svg>
   );
 }
 
-interface FlowerConfig {
+interface FieldFlowerConfig {
   left: number;
-  stemLength: number;
   headSize: number;
+  stemLength: number;
   petalCount: number;
   leafCount: number;
-  rotate: number;
-  color: string;
   opacity: number;
-  sway: boolean;
-  swayDuration: number;
-  swayDelay: number;
 }
 
-// Depth tiers: foreground flowers are bigger AND drawn in a richer, darker
-// brown; background ones are smaller AND lighter/more muted — color plus
-// size together, not opacity alone, so the row reads as actual atmospheric
-// depth rather than a flat row of identical silhouettes at different fades.
-const COLOR_FOREGROUND = "#3d2419";
-const COLOR_MID = "#4a2f26";
-const COLOR_BACKGROUND = "#8a6a5a";
-
-// Hand-placed, fixed values (not Math.random()) — same hydration-safety
-// reasoning as CLOUDS/STARS in ambient/NightSky.tsx: this needs to look
-// irregular, not be regenerated per session, so hardcoding varied numbers
-// directly is simpler than a seeded PRNG for just 16 entries. Only some
-// sway (a light breeze wouldn't move every stem identically). All 16 slots
-// are plain SunflowerSvg silhouettes — the detailed Lottie sunflower "wow
-// factor" lives in ambient/GoldenSkySection.tsx's centerpiece instead; the
-// Hero field doesn't duplicate it.
-const FLOWERS: FlowerConfig[] = [
-  { left: 1, stemLength: 40, headSize: 40, petalCount: 12, leafCount: 1, rotate: -7, color: COLOR_BACKGROUND, opacity: 0.55, sway: false, swayDuration: 0, swayDelay: 0 },
-  { left: 8, stemLength: 60, headSize: 48, petalCount: 14, leafCount: 2, rotate: 5, color: COLOR_MID, opacity: 0.75, sway: true, swayDuration: 4.2, swayDelay: 0.3 },
-  { left: 15, stemLength: 34, headSize: 38, petalCount: 13, leafCount: 1, rotate: -4, color: COLOR_BACKGROUND, opacity: 0.5, sway: false, swayDuration: 0, swayDelay: 0 },
-  { left: 22, stemLength: 90, headSize: 60, petalCount: 16, leafCount: 2, rotate: 8, color: COLOR_FOREGROUND, opacity: 0.92, sway: true, swayDuration: 3.6, swayDelay: 1.1 },
-  { left: 29, stemLength: 50, headSize: 46, petalCount: 13, leafCount: 1, rotate: -9, color: COLOR_MID, opacity: 0.66, sway: false, swayDuration: 0, swayDelay: 0 },
-  { left: 36, stemLength: 98, headSize: 64, petalCount: 15, leafCount: 2, rotate: 3, color: COLOR_FOREGROUND, opacity: 0.95, sway: true, swayDuration: 4.8, swayDelay: 0.6 },
-  { left: 43, stemLength: 36, headSize: 40, petalCount: 12, leafCount: 1, rotate: -5, color: COLOR_BACKGROUND, opacity: 0.54, sway: false, swayDuration: 0, swayDelay: 0 },
-  { left: 50, stemLength: 66, headSize: 50, petalCount: 14, leafCount: 2, rotate: 7, color: COLOR_MID, opacity: 0.8, sway: true, swayDuration: 3.9, swayDelay: 1.6 },
-  { left: 57, stemLength: 56, headSize: 47, petalCount: 13, leafCount: 1, rotate: -6, color: COLOR_MID, opacity: 0.7, sway: false, swayDuration: 0, swayDelay: 0 },
-  { left: 64, stemLength: 94, headSize: 62, petalCount: 16, leafCount: 2, rotate: 4, color: COLOR_FOREGROUND, opacity: 0.93, sway: true, swayDuration: 4.4, swayDelay: 0.2 },
-  { left: 71, stemLength: 38, headSize: 42, petalCount: 12, leafCount: 1, rotate: -8, color: COLOR_BACKGROUND, opacity: 0.58, sway: false, swayDuration: 0, swayDelay: 0 },
-  { left: 78, stemLength: 62, headSize: 49, petalCount: 14, leafCount: 2, rotate: 6, color: COLOR_MID, opacity: 0.78, sway: true, swayDuration: 3.4, swayDelay: 1.4 },
-  { left: 85, stemLength: 32, headSize: 39, petalCount: 13, leafCount: 1, rotate: -3, color: COLOR_BACKGROUND, opacity: 0.52, sway: false, swayDuration: 0, swayDelay: 0 },
-  { left: 91, stemLength: 86, headSize: 58, petalCount: 15, leafCount: 2, rotate: 5, color: COLOR_FOREGROUND, opacity: 0.9, sway: true, swayDuration: 4.6, swayDelay: 0.8 },
-  { left: 97, stemLength: 30, headSize: 37, petalCount: 12, leafCount: 1, rotate: -7, color: COLOR_BACKGROUND, opacity: 0.5, sway: false, swayDuration: 0, swayDelay: 0 },
-  { left: 100, stemLength: 58, headSize: 47, petalCount: 13, leafCount: 1, rotate: 2, color: COLOR_MID, opacity: 0.72, sway: false, swayDuration: 0, swayDelay: 0 },
+const FIELD_FLOWERS: FieldFlowerConfig[] = [
+  { left: 6, headSize: 30, stemLength: 40, petalCount: 12, leafCount: 1, opacity: 0.5 },
+  { left: 20, headSize: 44, stemLength: 56, petalCount: 14, leafCount: 2, opacity: 0.7 },
+  { left: 34, headSize: 34, stemLength: 44, petalCount: 13, leafCount: 1, opacity: 0.58 },
+  { left: 50, headSize: 54, stemLength: 68, petalCount: 16, leafCount: 2, opacity: 0.85 },
+  { left: 66, headSize: 36, stemLength: 46, petalCount: 13, leafCount: 1, opacity: 0.6 },
+  { left: 80, headSize: 46, stemLength: 58, petalCount: 14, leafCount: 2, opacity: 0.75 },
+  { left: 94, headSize: 30, stemLength: 40, petalCount: 12, leafCount: 1, opacity: 0.5 },
 ];
 
-// A row of sunflower silhouettes along the bottom edge — V1's signature
-// motif, reused across later sections. Positioned below the text (no
-// explicit z-index, so the z-10 text block above always wins) but painted
-// after the sky/glow/motes layers, so it reads as a grounding foreground
-// element in front of the sky.
 function SunflowerField() {
   return (
-    <div
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-x-0 bottom-0 h-[18%]"
-    >
-      {FLOWERS.map((flower, i) => (
-        <motion.div
+    <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-[26%]">
+      {FIELD_FLOWERS.map((flower, i) => (
+        <div
           key={i}
           className="absolute bottom-0"
-          style={{
-            left: `${flower.left}%`,
-            color: flower.color,
-            opacity: flower.opacity,
-            transformOrigin: "bottom center",
-          }}
-          initial={{ rotate: flower.rotate }}
-          animate={
-            flower.sway
-              ? { rotate: [flower.rotate - 3, flower.rotate + 3, flower.rotate - 3] }
-              : { rotate: flower.rotate }
-          }
-          transition={
-            flower.sway
-              ? {
-                duration: flower.swayDuration,
-                delay: flower.swayDelay,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }
-              : undefined
-          }
+          style={{ left: `${flower.left}%`, opacity: flower.opacity, color: SUNFLOWER_CENTER_COLOR, transform: "translateX(-50%)" }}
         >
           <SunflowerSvg
             stemLength={flower.stemLength}
             headSize={flower.headSize}
             petalCount={flower.petalCount}
             leafCount={flower.leafCount}
+            petalColor={SUNFLOWER_PETAL_COLOR}
           />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// A soft warm glow grounding the section's lower/horizon area — no flower
+// shapes, just atmosphere, filling the visual gap the sunflower field used
+// to occupy now that it's gone. Same radial-gradient-at-bottom technique as
+// ambient/GoldenSkySection.tsx's FieldGlowPool, reimplemented locally per
+// V1's self-containment convention, and the same slow opacity pulse as that
+// file's other ambient glows for a consistent "breathing" feel across
+// sections.
+function HorizonGlow() {
+  return (
+    <motion.div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-[48%] blur-2xl"
+      style={{
+        background:
+          "radial-gradient(ellipse at bottom, rgba(253,196,120,0.26) 0%, rgba(253,196,120,0.1) 45%, rgba(253,196,120,0) 78%)",
+      }}
+      animate={{ opacity: [0.7, 1, 0.7] }}
+      transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+    />
+  );
+}
+
+interface DriftingPetal {
+  id: number;
+  left: number;
+  size: number;
+  duration: number;
+  delay: number;
+  swayAmount: number;
+  rotateStart: number;
+  opacity: number;
+}
+
+// Sparse on purpose ("ambient, not dense" per this task's brief) — well
+// under ambient/GoldenSkySection.tsx's own PETAL_COUNT (10), since this is
+// just enough drift to keep the lower two-thirds from reading empty, not a
+// second copy of that section's signature effect.
+const PETAL_COUNT = 6;
+
+function randomHeroPetal(id: number): DriftingPetal {
+  return {
+    id,
+    left: Math.random() * 100,
+    size: 8 + Math.random() * 8,
+    duration: 13 + Math.random() * 10,
+    delay: -(Math.random() * 16),
+    swayAmount: 14 + Math.random() * 22,
+    rotateStart: Math.random() * 360,
+    opacity: 0.25 + Math.random() * 0.3,
+  };
+}
+
+const EMPTY_HERO_PETALS: DriftingPetal[] = [];
+
+function noopSubscribeHeroPetals() {
+  return () => { };
+}
+
+// Same pointed, downward-tapering petal silhouette as
+// ambient/GoldenSkySection.tsx's fallingPetalPath, reimplemented locally
+// per V1's self-containment convention — base at y=0, tip at y=length, so
+// it falls tip-first like a real petal instead of reading as a plain oval.
+function fallingPetalPath(length: number, width: number): string {
+  const w = width / 2;
+  const midY1 = length * 0.18;
+  const midY2 = length * 0.6;
+  return `M0,0 C${-w},${midY1} ${-w * 0.55},${midY2} 0,${length} C${w * 0.55},${midY2} ${w},${midY1} 0,0 Z`;
+}
+
+// Gentle petal drift filling the lower two-thirds of the section now that
+// the sunflower field is gone — color-synced to the same warm gold-orange
+// (#dd9a42) as GoldenSkySection's own falling petals, so it reads as the
+// same motif continuing across sections rather than a new one. Confined to
+// its own h-[66%] bottom-anchored wrapper (petals travel from just above
+// that wrapper's own top edge to just below its bottom edge, not the full
+// section height) — this is what keeps them out of the vertically-centered
+// heading/subtitle/divider column above without needing a horizontal
+// spawn-exclusion band (ambient/GoldenSkySection.tsx's own fix for its
+// wider, differently-shaped content row): Hero's text block sits in the
+// vertical middle of the viewport, so simply not falling above the lower
+// two-thirds already clears it. Explicit z-0, rendered first (same
+// reasoning as that file's PetalDrift) so it's unambiguously behind
+// everything else in this section. Same useSyncExternalStore hydration
+// pattern as LightMotes above: empty/deterministic on server and first
+// client paint, randomized client-only layout after.
+function PetalDrift() {
+  const cacheRef = useRef<DriftingPetal[] | null>(null);
+
+  const petals = useSyncExternalStore(
+    noopSubscribeHeroPetals,
+    () => {
+      if (!cacheRef.current) {
+        cacheRef.current = Array.from({ length: PETAL_COUNT }, (_, i) => randomHeroPetal(i));
+      }
+      return cacheRef.current;
+    },
+    () => EMPTY_HERO_PETALS,
+  );
+
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-[66%] overflow-hidden">
+      {petals.map((petal) => (
+        <motion.div
+          key={petal.id}
+          className="absolute top-0 text-[#dd9a42]"
+          style={{ left: `${petal.left}%`, opacity: petal.opacity }}
+          initial={{ y: "-10%", rotate: petal.rotateStart }}
+          animate={{
+            y: "115%",
+            x: [0, petal.swayAmount, -petal.swayAmount * 0.6, petal.swayAmount * 0.3, 0],
+            rotate: petal.rotateStart + 200,
+          }}
+          transition={{
+            y: {
+              duration: petal.duration,
+              delay: petal.delay,
+              repeat: Infinity,
+              ease: "linear",
+            },
+            x: {
+              duration: petal.duration,
+              delay: petal.delay,
+              repeat: Infinity,
+              ease: "easeInOut",
+            },
+            rotate: {
+              duration: petal.duration,
+              delay: petal.delay,
+              repeat: Infinity,
+              ease: "linear",
+            },
+          }}
+        >
+          <svg viewBox="0 0 16 32" width={petal.size} height={petal.size * 2}>
+            <path d={fallingPetalPath(26, 10)} fill="currentColor" transform="translate(8 3)" />
+          </svg>
         </motion.div>
       ))}
     </div>
@@ -543,7 +628,11 @@ export default function SunsetHero({ people, groupTitle, title }: SunsetHeroProp
   const heading = formatPeopleHeading(people, groupTitle);
 
   return (
-    <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-[#f5ddd0] via-[#e8c4b0] to-[#f0e0d0] px-6 text-center">
+    <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 text-center">
+      <PetalDrift />
+      <HorizonGlow />
+      <SunflowerField />
+
       {/* Setting sun: a soft cream-gold glow tucked into the top-right
           corner, mostly off-screen — like the sun itself is just out of
           frame, only its light spilling in. Establishes a clear light
@@ -581,8 +670,6 @@ export default function SunsetHero({ people, groupTitle, title }: SunsetHeroProp
             "radial-gradient(ellipse, rgba(255,251,244,0.5) 0%, rgba(255,251,244,0) 70%)",
         }}
       />
-
-      <SunflowerField />
 
       <div className="relative z-10">
         <motion.h1

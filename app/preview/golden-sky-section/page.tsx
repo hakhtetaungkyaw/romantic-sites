@@ -6,6 +6,13 @@ import { dummySiteData } from "@/lib/dummyData";
 // redesign (Sections 3-6) is built. Safe to delete once those land and this
 // folds into a real updated V1 template.
 export default function GoldenSkySectionPreviewPage() {
-  const { specialDate } = dummySiteData;
-  return <GoldenSkySection specialDate={specialDate} />;
+  const { people, groupTitle, specialDate, photos } = dummySiteData;
+  return (
+    <GoldenSkySection
+      people={people}
+      groupTitle={groupTitle}
+      specialDate={specialDate}
+      photos={photos}
+    />
+  );
 }

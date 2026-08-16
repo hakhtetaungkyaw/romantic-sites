@@ -1,9 +1,9 @@
-import { FacebookIcon, InstagramIcon, TikTokIcon } from "@/components/home/icons";
+import { TelegramIcon, TikTokIcon } from "@/components/home/icons";
 
-// TODO: replace with the real Instagram/Facebook/TikTok profile links.
-const INSTAGRAM_URL = "https://instagram.com/yourhandle";
-const FACEBOOK_URL = "https://facebook.com/yourhandle";
-const TIKTOK_URL = "https://tiktok.com/@VOWX_PLACEHOLDER";
+// This business only runs TikTok + Telegram — Facebook/Instagram icons and
+// links were removed. Same handle/URL as Nav.tsx and FinalCTA.tsx.
+const TIKTOK_URL = "https://www.tiktok.com/@vowxteam";
+const TELEGRAM_URL = "https://t.me/vowxteam";
 
 export default function Footer() {
   return (
@@ -14,22 +14,13 @@ export default function Footer() {
       <p className="mt-1 text-sm text-[#a1a1aa]">Your love story, beautifully told.</p>
       <div className="mt-5 flex items-center justify-center gap-4">
         <a
-          href={INSTAGRAM_URL}
+          href={TELEGRAM_URL}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label="Instagram"
+          aria-label="Telegram"
           className="text-[#a1a1aa] transition-colors hover:text-[#6366f1]"
         >
-          <InstagramIcon size={20} />
-        </a>
-        <a
-          href={FACEBOOK_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Facebook"
-          className="text-[#a1a1aa] transition-colors hover:text-[#6366f1]"
-        >
-          <FacebookIcon size={20} />
+          <TelegramIcon size={20} />
         </a>
         <a
           href={TIKTOK_URL}
