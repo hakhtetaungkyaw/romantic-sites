@@ -3,6 +3,8 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 
+import { fadeUpVariant, viewportRepeat } from "@/lib/v2ScrollReveal";
+
 interface Milestone {
   date: string;
   title: string;
@@ -46,11 +48,20 @@ function TimelineCard({
   isLeft: boolean;
 }) {
   return (
+    // Own independent whileInView trigger per entry (fadeUpVariant
+    // directly, not a shared staggerContainerVariant ancestor) — entries
+    // are spread down a long scrolling section and need to reveal as EACH
+    // one individually crosses into view, same reasoning as V1's
+    // SunsetTimeline. This does trade away the previous alternating
+    // slide-in-from-the-side (x: isLeft ? -28 : 28) for the shared
+    // fadeUpVariant's plain rise, per the task's explicit "apply
+    // fadeUpVariant to each timeline entry's card" — isLeft is now only
+    // used for the layout classes below, not the motion itself.
     <motion.div
-      initial={{ opacity: 0, x: isLeft ? -28 : 28 }}
-      whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true, amount: 0.4 }}
-      transition={{ duration: 0.8, ease: "easeOut" }}
+      initial="hidden"
+      whileInView="visible"
+      viewport={viewportRepeat}
+      variants={fadeUpVariant}
       className={`rounded-xl border border-[#d4af7a]/15 bg-[#faf5f0]/[0.04] p-6 backdrop-blur-sm ${
         isLeft
           ? "sm:col-start-1 sm:row-start-1 sm:text-right"

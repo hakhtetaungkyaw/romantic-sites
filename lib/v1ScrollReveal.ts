@@ -64,6 +64,8 @@ export const staggerContainerVariant: Variants = {
   },
 };
 
-// Shared whileInView threshold — reveals fire once, the first time ~30% of
-// the element is in view, and never re-trigger on scrolling back past it.
-export const viewportOnce = { once: true, amount: 0.3 };
+// Shared whileInView threshold — reveals fire every time ~30% of the
+// element is in view, animating back to "hidden" on scrolling past it in
+// either direction and replaying the reveal on re-entry, rather than firing
+// once and staying settled.
+export const viewportOnce = { once: false, amount: 0.3 };

@@ -3,6 +3,8 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 
+import { fadeUpVariant, viewportRepeat } from "@/lib/v2ScrollReveal";
+
 interface Place {
   name: string;
   caption: string;
@@ -218,10 +220,10 @@ export default function PlacesWeveBeen({ places }: PlacesWeveBeenProps) {
   return (
     <section className="px-6 py-[120px]">
       <motion.p
-        initial={{ opacity: 0, y: 12 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
+        initial="hidden"
+        whileInView="visible"
+        viewport={viewportRepeat}
+        variants={fadeUpVariant}
         className="mb-12 text-center text-xs uppercase tracking-[0.4em] text-[#e8b4bc]/70 sm:text-sm"
       >
         Places we&apos;ve been
@@ -231,10 +233,10 @@ export default function PlacesWeveBeen({ places }: PlacesWeveBeenProps) {
           a static view. Desktop/tablet only: mobile's stacked list already
           shows every card without needing to hover. */}
       <motion.p
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
+        initial="hidden"
+        whileInView="visible"
+        viewport={viewportRepeat}
+        variants={fadeUpVariant}
         className="font-display mb-6 hidden text-center text-xs italic text-[#d4af7a]/60 sm:block"
       >
         Hover over a pin to relive the memory

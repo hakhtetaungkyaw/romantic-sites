@@ -29,7 +29,7 @@ unaware of the array shape.
   rose/burgundy palette, Georgia-based `font-serif`, plain flat sections, page-wide
   ambient hearts.
 - `templates/AnniversaryV2.tsx` — composes `interactive/UnlockGate` (wraps
-  everything), `ambient/CursorGlow`, `interactive/ScrollProgressIndicator`,
+  everything), `interactive/ScrollProgressIndicator`,
   `interactive/SongPlayer`, `interactive/LoveNote`, `hero/CinematicVideo`,
   `countdown/GlassCards`, `message/TypedPhrases`, `message/LetterCard`,
   `ambient/NightSky`, `gallery/Magazine`, `gallery/Video`,
@@ -219,11 +219,6 @@ Mood/atmosphere layers — decorative, not functional UI or narrative content.
   large serif terracotta (UTC-based formatting, same reasoning as
   `NightSky.tsx`) — used in: V1 (new "Golden Hour" redesign, not yet wired into
   `AnniversaryV1.tsx`) — props: `specialDate: string`
-- `CursorGlow.tsx` — soft 400px radial gold glow (opacity 0.08) that follows the
-  cursor with a spring lag, desktop-only (`(pointer: fine)` check via
-  `useSyncExternalStore`, renders `null` on touch devices), rendered as a `z-0`
-  sibling before the `z-10` content wrapper in `AnniversaryV2` so it stays behind
-  readable content without negative z-index — used in: V2 — props: *(none)*
 - `NightSky.tsx` — full-width navy-to-purple gradient section (`#0d0a1a` →
   `#1e1240`, distinct from the burgundy elsewhere), ~100 fixed twinkling stars
   (seeded PRNG, not `Math.random()`, for hydration-safe stable positions) across 3

@@ -3,6 +3,8 @@
 import { motion } from "framer-motion";
 import { useRef, useSyncExternalStore } from "react";
 
+import { fadeUpVariant, staggerContainerVariant, viewportRepeat } from "@/lib/v2ScrollReveal";
+
 interface ElegantCountdownProps {
   specialDate: string;
   label?: string;
@@ -71,21 +73,24 @@ export default function ElegantCountdown({
   return (
     <section className="relative z-20 -mt-16 px-6 sm:-mt-20">
       <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 1, ease: "easeOut" }}
+        initial="hidden"
+        whileInView="visible"
+        viewport={viewportRepeat}
+        variants={staggerContainerVariant}
         className="mx-auto max-w-3xl rounded-3xl border border-[#d4af7a]/20 bg-[#faf5f0]/[0.04] px-6 py-8 text-center shadow-2xl shadow-black/40 backdrop-blur-xl sm:px-10 sm:py-10"
       >
-        <p className="mb-6 text-xs uppercase tracking-[0.35em] text-[#e8b4bc]/70 sm:text-sm">
+        <motion.p variants={fadeUpVariant} className="mb-6 text-xs uppercase tracking-[0.35em] text-[#e8b4bc]/70 sm:text-sm">
           {label}
-        </p>
+        </motion.p>
         <div className="flex flex-wrap justify-center gap-3 sm:gap-5">
           {units.map((unit) => (
-            <div
+            <motion.div
               key={unit.label}
+              variants={fadeUpVariant}
               className="flex w-[70px] flex-col items-center rounded-2xl border border-[#d4af7a]/25 bg-white/[0.03] py-4 backdrop-blur-md sm:w-20 sm:py-5"
             >
+              {/* Per-tick digit pop — the countdown's own live-update
+                  animation, not a scroll reveal, untouched. */}
               <motion.span
                 key={unit.value}
                 initial={{ opacity: 0.4, scale: 1.15 }}
@@ -98,7 +103,7 @@ export default function ElegantCountdown({
               <span className="mt-1 text-[10px] uppercase tracking-widest text-[#faf5f0]/50">
                 {unit.label}
               </span>
-            </div>
+            </motion.div>
           ))}
         </div>
       </motion.div>

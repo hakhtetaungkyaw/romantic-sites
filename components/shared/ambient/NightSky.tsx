@@ -3,6 +3,8 @@
 import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
+import { fadeUpVariant, viewportRepeat } from "@/lib/v2ScrollReveal";
+
 interface NightSkySectionProps {
   specialDate: string;
 }
@@ -438,10 +440,10 @@ export default function NightSkySection({ specialDate }: NightSkySectionProps) {
 
       <div className="relative z-10 mx-auto flex max-w-lg flex-col items-center text-center">
         <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.6 }}
-          transition={{ duration: 0.9, ease: "easeOut" }}
+          initial="hidden"
+          whileInView="visible"
+          viewport={viewportRepeat}
+          variants={fadeUpVariant}
           className="font-display text-base italic text-[#e8d9c0]/80 sm:text-lg"
         >
           {CAPTION}
@@ -503,10 +505,10 @@ export default function NightSkySection({ specialDate }: NightSkySectionProps) {
         </div>
 
         <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.6 }}
-          transition={{ duration: 0.9, ease: "easeOut", delay: 0.2 }}
+          initial="hidden"
+          whileInView="visible"
+          viewport={viewportRepeat}
+          variants={fadeUpVariant}
           className="font-display mt-10 text-3xl font-medium text-[#d4af7a] sm:text-4xl"
         >
           {formatSpecialDate(specialDate)}

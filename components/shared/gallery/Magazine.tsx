@@ -1,10 +1,12 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useInView } from "framer-motion";
+import { ChevronDown } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
+import { fadeUpVariant, scaleBlurVariant, staggerContainerVariant } from "@/lib/v2ScrollReveal";
 import type { SitePhoto } from "@/types/site";
 
 interface MemoryGalleryProps {
@@ -43,22 +45,26 @@ function getDimensions(src: string) {
   return PHOTO_DIMENSIONS[filename] ?? DEFAULT_DIMENSIONS;
 }
 
-// Deliberate large/small rhythm through the sequence — every third piece is a
-// "feature," the rest are smaller "companion" pieces. Fixed by index, not
-// random, so the curation reads as intentional.
-const FEATURE_HEIGHT = 600;
-const COMPANION_HEIGHT = 400;
-
-// ---- Ambient night-sky texture behind the wall — self-contained local copy
-// of ambient/NightSky.tsx's own deterministic-star technique (same
-// mulberry32 PRNG, same globals.css `twinkle` keyframe via CSS custom
-// properties), reimplemented here rather than imported so this file has no
-// dependency on that component. A much sparser/smaller field (28 vs. that
-// section's 100, capped at 1.8px, low opacity ceiling) — this is meant to
-// read as a quiet extension of the surrounding night rather than a second
-// full starfield competing with NightSky's own. Fixed at module scope from a
-// seeded PRNG, so it's identical on server and client with no client-only
-// gating needed. ----
+// ---- Ambient night-sky texture — own local reimplementation of
+// ambient/NightSky.tsx's star-rendering approach (same mulberry32 PRNG
+// technique, same globals.css `twinkle` keyframe via CSS custom properties,
+// including that file's "featured star" tier), not imported from it: per
+// this project's architecture convention V2 files stay independent of each
+// other's component code the same way V1 files do (this file already took
+// that position before this pass, so this keeps that precedent rather than
+// introducing a new shared component for a pattern this modest).
+//
+// Takes a `seed` (generated fresh per gallery slide, via useMemo, rather
+// than one fixed module-scope array — each full-screen slide is meant to
+// read as its own complete scene, not a shared background bleeding across
+// every slide) and a `variant`: the split-screen layout below mounts TWO
+// independent instances per slide, one behind the photo and one behind the
+// caption, deliberately at different density/positioning rather than one
+// field spanning both halves — "photo" keeps the fuller, previously-tuned
+// treatment; "caption" is sparser and repositioned slightly, atmospheric
+// without ever competing with the text it sits behind for attention. Still
+// fully deterministic per seed (no Math.random()), so there's no hydration
+// risk. Untouched by this pass. ----
 function mulberry32(seed: number) {
   let state = seed;
   return function random() {
@@ -76,61 +82,85 @@ interface AmbientStar {
   size: number;
   minOpacity: number;
   maxOpacity: number;
+  glow: number;
+  glowOpacity: number;
   duration: number;
   delay: number;
+  color: string;
 }
 
-const AMBIENT_STAR_COUNT = 28;
+const PHOTO_STAR_COUNT = 50;
+const CAPTION_STAR_COUNT = 22;
+const STAR_WARM_WHITE = "#f7f2e7";
+const STAR_GOLD = "#f2dfb0";
 
-const AMBIENT_STARS: AmbientStar[] = (() => {
-  const rand = mulberry32(6510);
-  return Array.from({ length: AMBIENT_STAR_COUNT }, () => ({
-    x: rand() * 100,
-    y: rand() * 100,
-    size: 1 + rand() * 0.8,
-    minOpacity: 0.08 + rand() * 0.06,
-    maxOpacity: 0.35 + rand() * 0.25,
-    duration: 2.8 + rand() * 1.8,
-    delay: rand() * 4,
-  }));
-})();
+function buildAmbientStars(seed: number, count: number): AmbientStar[] {
+  const rand = mulberry32(seed);
+  return Array.from({ length: count }, () => {
+    // ~20% "featured" — bigger, brighter-peaking, visibly glowing — so the
+    // eye catches specific sparkles rather than a uniform dim shimmer,
+    // same proportion/idea as NightSky.tsx's own featured-star tier.
+    const featured = rand() < 0.2;
+    return {
+      x: rand() * 100,
+      y: rand() * 100,
+      size: featured ? 2.2 + rand() * 1.6 : 1 + rand() * 1.4,
+      minOpacity: 0.18 + rand() * 0.1,
+      maxOpacity: featured ? 0.85 + rand() * 0.15 : 0.5 + rand() * 0.3,
+      glow: featured ? 3 + rand() * 3 : rand() * 1.5,
+      glowOpacity: featured ? 0.55 + rand() * 0.3 : rand() * 0.2,
+      duration: 2.2 + rand() * 2.6,
+      delay: rand() * 5,
+      color: rand() < 0.35 ? STAR_GOLD : STAR_WARM_WHITE,
+    };
+  });
+}
 
-function AmbientStars() {
+function AmbientStars({ seed, variant = "photo" }: { seed: number; variant?: "photo" | "caption" }) {
+  const isCaption = variant === "caption";
+  const stars = useMemo(
+    () => buildAmbientStars(seed, isCaption ? CAPTION_STAR_COUNT : PHOTO_STAR_COUNT),
+    [seed, isCaption],
+  );
+
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-      {AMBIENT_STARS.map((star, i) => (
+      {stars.map((star, i) => (
         <div
           key={i}
-          className="absolute rounded-full bg-[#f7f2e7]"
+          className="absolute rounded-full"
           style={
             {
               left: `${star.x}%`,
               top: `${star.y}%`,
               width: star.size,
               height: star.size,
+              backgroundColor: star.color,
               opacity: star.minOpacity,
               animation: `twinkle ${star.duration}s ease-in-out ${star.delay}s infinite`,
               "--min-opacity": star.minOpacity,
               "--max-opacity": star.maxOpacity,
               "--min-scale": 0.85,
-              "--max-scale": 1.15,
-              "--glow": "2px",
-              "--glow-opacity": 0.4,
+              "--max-scale": 1.2,
+              "--glow": `${star.glow}px`,
+              "--glow-opacity": star.glowOpacity,
             } as React.CSSProperties
           }
         />
       ))}
-      {/* Two soft warm-gold glow pools, hand-placed (not random) — quiet
-          ambient light sources for the wall to hang in, echoing the gold
-          tone of the frames themselves rather than the cooler moonlight
-          blue NightSky uses. */}
+      {/* One soft warm-gold glow pool, hand-placed (not random) — a quiet
+          ambient light source for this half's own scene, echoing the gold
+          tone of the frame itself rather than the cooler moonlight blue
+          NightSky uses. Sized/positioned differently per variant so the two
+          halves read as distinct considered scenes rather than mirrored
+          copies of each other. Untouched by this pass. */}
       <div
-        className="absolute -left-24 top-[10%] h-72 w-72 rounded-full blur-3xl"
+        className={
+          isCaption
+            ? "absolute left-1/2 top-[42%] h-[45vh] w-[70vw] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl sm:w-[50vw] md:w-[38vw]"
+            : "absolute left-1/2 top-1/2 h-[70vh] w-[85vw] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl sm:w-[65vw] md:w-[46vw]"
+        }
         style={{ background: "radial-gradient(circle, rgba(212,175,122,0.1) 0%, rgba(212,175,122,0) 70%)" }}
-      />
-      <div
-        className="absolute -right-20 bottom-[15%] h-80 w-80 rounded-full blur-3xl"
-        style={{ background: "radial-gradient(circle, rgba(212,175,122,0.08) 0%, rgba(212,175,122,0) 70%)" }}
       />
     </div>
   );
@@ -139,18 +169,50 @@ function AmbientStars() {
 // A small gold diamond at each of the frame's four corners — the detail
 // that pushes the border from "a gold line" toward "a gold-leaf frame,"
 // since real gilded frames almost always carry a corner ornament, not just
-// a flat mitred edge.
+// a flat mitred edge. Untouched by this pass.
 function CornerOrnament({ position }: { position: "tl" | "tr" | "bl" | "br" }) {
   const placement: Record<typeof position, string> = {
-    tl: "-left-[3px] -top-[3px]",
-    tr: "-right-[3px] -top-[3px]",
-    bl: "-left-[3px] -bottom-[3px]",
-    br: "-right-[3px] -bottom-[3px]",
+    tl: "-left-[3px] -top-[3px] sm:-left-1 sm:-top-1",
+    tr: "-right-[3px] -top-[3px] sm:-right-1 sm:-top-1",
+    bl: "-left-[3px] -bottom-[3px] sm:-left-1 sm:-bottom-1",
+    br: "-right-[3px] -bottom-[3px] sm:-right-1 sm:-bottom-1",
   };
   return (
     <span
       aria-hidden="true"
-      className={`absolute ${placement[position]} h-[7px] w-[7px] rotate-45 bg-[#f2dfb0] opacity-70 shadow-[0_0_5px_rgba(212,175,122,0.7)] transition-opacity duration-500 group-hover:opacity-100`}
+      className={`absolute ${placement[position]} h-[7px] w-[7px] rotate-45 bg-[#f2dfb0] opacity-70 shadow-[0_0_5px_rgba(212,175,122,0.7)] transition-opacity duration-500 group-hover:opacity-100 sm:h-2.5 sm:w-2.5`}
+    />
+  );
+}
+
+// A small twinkling star-point sitting just outside two opposite corners of
+// each frame (further out than CornerOrnament's own diamonds, so the two
+// motifs sit near each other without overlapping) — a light "constellation
+// adjacent" touch tying each frame to the surrounding starfield, using the
+// same twinkle keyframe/custom-property technique as AmbientStars above,
+// just a little larger/brighter since these are meant to actually register
+// next to the frame rather than blend into the distant field. Untouched by
+// this pass.
+function FrameStarAccent({ position }: { position: "tl" | "br" }) {
+  const placement: Record<"tl" | "br", string> = {
+    tl: "-left-3 -top-3 sm:-left-4 sm:-top-4",
+    br: "-right-3 -bottom-3 sm:-right-4 sm:-bottom-4",
+  };
+  return (
+    <span
+      aria-hidden="true"
+      className={`pointer-events-none absolute ${placement[position]} h-[3px] w-[3px] rounded-full bg-[#f7f2e7] sm:h-1 sm:w-1`}
+      style={
+        {
+          animation: "twinkle 3.4s ease-in-out infinite",
+          "--min-opacity": 0.3,
+          "--max-opacity": 0.9,
+          "--min-scale": 0.8,
+          "--max-scale": 1.3,
+          "--glow": "3px",
+          "--glow-opacity": 0.6,
+        } as React.CSSProperties
+      }
     />
   );
 }
@@ -200,10 +262,10 @@ interface LightboxProps {
   onNavigate: (index: number) => void;
 }
 
-// Click-to-enlarge overlay for the wall below. Portal + hydration-safe
-// pattern carried over from lessons already learned building this same
-// feature in V1's gallery/SunlitPolaroids.tsx this session (reimplemented
-// fresh here, not imported — this file shares no code with any V1 file):
+// Click-to-enlarge overlay. Portal + hydration-safe pattern carried over
+// from lessons already learned building this same feature in V1's
+// gallery/SunlitPolaroids.tsx this session (reimplemented fresh here, not
+// imported — this file shares no code with any V1 file):
 //   - The whole AnimatePresence block is portaled as a single unit, not
 //     createPortal nested inside its children — createPortal's return value
 //     isn't a valid React element, so AnimatePresence can't clone it as a
@@ -220,6 +282,8 @@ interface LightboxProps {
 //     above) inside a content-sized wrapper with `overflow-hidden` as a
 //     safety net only, not a fixed box — that's what lets a portrait photo's
 //     frame hug its actual shape instead of pillarboxing.
+// Completely untouched by this pass — still opens exactly the same way,
+// from any slide's photo.
 function Lightbox({ photos, index, onClose, onNavigate }: LightboxProps) {
   const isMounted = useSyncExternalStore(noopSubscribe, () => true, () => false);
   const photo = photos[index];
@@ -265,7 +329,7 @@ function Lightbox({ photos, index, onClose, onNavigate }: LightboxProps) {
           className="absolute inset-0 bg-[#0c0509]/75 backdrop-blur-sm"
           onClick={onClose}
         >
-          <AmbientStars />
+          <AmbientStars seed={6510} />
         </div>
 
         <button
@@ -314,11 +378,12 @@ function Lightbox({ photos, index, onClose, onNavigate }: LightboxProps) {
           className="relative z-0 flex w-fit max-h-[90vh] max-w-[92vw] flex-col items-center overflow-hidden p-5"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Same gold-leaf-frame treatment as the wall below (gradient
-              border + corner ornaments), scaled up and held straight (no
-              tilt) since this is the focal enlarged view. Content-sized
-              (no fixed width/height), so nothing here can overflow —
-              `overflow-hidden` is a safety net, not a scroll boundary. */}
+          {/* Same gold-leaf-frame treatment as each slide's photo half
+              (gradient border + corner ornaments), scaled up and held
+              straight (no tilt) since this is the focal enlarged view.
+              Content-sized (no fixed width/height), so nothing here can
+              overflow — `overflow-hidden` is a safety net, not a scroll
+              boundary. */}
           <div className="relative rounded-md bg-gradient-to-br from-[#d4af7a] via-[#f2dfb0] to-[#9c7a45] p-[3px] shadow-2xl shadow-black/60">
             <CornerOrnament position="tl" />
             <CornerOrnament position="tr" />
@@ -348,129 +413,276 @@ function Lightbox({ photos, index, onClose, onNavigate }: LightboxProps) {
   );
 }
 
-// V2's counterpart to V1's gallery/SunlitPolaroids.tsx — same "one real
-// memory per frame" intent, but a formal gallery-wall metaphor instead of a
-// scrapbook: a single stacked column of gilded frames with museum wall-label
-// captions beneath each, rather than a scattered polaroid grid.
+// Bouncing "keep scrolling" hint — same composition/technique as
+// hero/CinematicVideo.tsx's own scroll indicator (small uppercase label +
+// a gently bouncing chevron), reused as a pattern rather than shared code,
+// consistent with this file's existing "no cross-file V2 sharing"
+// precedent. Rendered as a direct child of the full-width slide (a sibling
+// of both halves, not nested inside either one), so `left-1/2` centers it
+// against the whole slide's width rather than just one half. Shown on
+// every slide except the last, so nothing implies the gallery has more to
+// show once it actually doesn't. Untouched by this pass.
+function ScrollHint() {
+  return (
+    <motion.div
+      className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 flex-col items-center gap-2 text-[#d4af7a]"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.6 }}
+    >
+      <span className="text-[10px] uppercase tracking-[0.3em] opacity-80">More below</span>
+      <motion.div
+        animate={{ y: [0, 8, 0] }}
+        transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+      >
+        <ChevronDown size={20} />
+      </motion.div>
+    </motion.div>
+  );
+}
+
+interface GallerySlideProps {
+  photo: SitePhoto;
+  index: number;
+  isLast: boolean;
+  onOpen: () => void;
+}
+
+// Extracted into its own component (rather than inline JSX inside
+// MemoryGallery's photos.map()) specifically so it can call its own hooks
+// (useInView/useState/useEffect below) — React's rules of hooks forbid
+// calling hooks inside a .map() callback in the parent, since that isn't a
+// stable per-item call site the way a genuinely separate component
+// instance per photo is.
 //
-// This pass elevates what was a plain gold-line-and-cream-mat frame:
-//   - AmbientStars: a sparse night-sky texture (own local copy of
-//     NightSky.tsx's star technique, much thinner) plus two soft gold glow
-//     pools, so the wall reads as hanging in the same night rather than
-//     floating on flat page background.
-//   - CornerOrnament + a gradient (not flat) gold border: pushes the frame
-//     from "a gold line" to an actual gold-leaf treatment, with a mat that
-//     now has its own subtle gradient + inset shadow for real depth instead
-//     of a flat cream fill.
-//   - The wall label below each frame is now a small flanking-line + diamond
-//     motif (a "museum placard" composition) instead of one plain divider,
-//     with a soft warm text-shadow glow on the caption echoing the frame's
-//     own gold glow — refined spacing/tracking to match.
-//   - A small eyebrow label above the whole wall ("MOMENTS, FRAMED"),
-//     matching the small-caps kicker treatment countdown/GlassCards.tsx and
-//     places/PlacesWeveBeen.tsx already use elsewhere in V2, so this section
-//     reads as part of the same established rhythm rather than a simpler
-//     one-off.
-//   - Click-to-enlarge lightbox (see Lightbox above) with prev/next
-//     wraparound navigation, Escape/backdrop-click/X close, in V2's own
-//     dark burgundy/gold tokens throughout (never V1's peach/terracotta).
+// FIX: photo stuck mid-blur. The previous version drove each slide's
+// reveal off Framer Motion's generic `whileInView` + `viewport: {once:
+// false, amount: 0.3}` — a live IntersectionObserver ratio crossing a
+// fairly low, fixed threshold. In a scroll-snap context that's unstable:
+// as a slide scrolls toward its snap point, the browser's own native
+// snap-settle animation can briefly overshoot and correct, and that
+// correction can make the visible ratio dip back below 30% and re-cross it
+// — every crossing restarts the scaleBlurVariant "hidden" -> "visible"
+// transition from scratch (opacity 0/scale 0.92/blur(8px) all over again),
+// so a jittery settle can keep re-triggering faster than the 0.8s
+// transition ever finishes, leaving the photo visibly stuck mid-blur
+// instead of reaching blur(0px).
+//
+// Fix: a custom "settled" trigger instead of the generic viewport
+// percentage. `useInView` still reports live intersection, now at a higher
+// 0.6 threshold (a slide that's actually snapped into place is close to
+// fully visible, so this alone already rejects most in-transit crossings),
+// but the value that actually drives the animation (`settled`) only
+// updates after that raw value has held steady for 150ms — i.e. only once
+// the slide has genuinely stopped moving, not just technically crossed a
+// ratio at some instant mid-scroll. Any renewed flicker within that window
+// cancels and restarts the debounce (a standard debounce pattern), so
+// continuous jitter simply keeps the photo at its last stable state rather
+// than stuttering, and settles cleanly the moment scrolling actually stops
+// — which is what "detecting when a slide has fully snapped into place"
+// means in practice here.
+function GallerySlide({ photo, index, isLast, onOpen }: GallerySlideProps) {
+  const { src, caption } = photo;
+  const { width, height } = getDimensions(src);
+  const isReversed = index % 2 === 1;
+
+  const slideRef = useRef<HTMLDivElement>(null);
+  const rawInView = useInView(slideRef, { amount: 0.6 });
+  const [settled, setSettled] = useState(false);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => setSettled(rawInView), 150);
+    return () => window.clearTimeout(timeoutId);
+  }, [rawInView]);
+
+  return (
+    // The stagger container itself (photo half uses scaleBlurVariant,
+    // caption half uses fadeUpVariant with no delay of its own — the
+    // container's staggerChildren/delayChildren is what gives the caption
+    // its "arrives just after the photo" timing). Driven by `animate`
+    // (the debounced `settled` boolean above) instead of `whileInView` —
+    // variant propagation to the two children below works identically
+    // either way, only the trigger mechanism changed.
+    <motion.div
+      ref={slideRef}
+      initial="hidden"
+      animate={settled ? "visible" : "hidden"}
+      variants={staggerContainerVariant}
+      className={`relative flex min-h-dvh w-full snap-center flex-col overflow-hidden md:flex-row ${
+        isReversed ? "md:flex-row-reverse" : ""
+      }`}
+    >
+      {/* Photo half — now ~62% of the slide's width on desktop (up from an
+          even 50/50 split) and sized close to the full available height
+          (md:max-h-[92vh], up from 78vh) so it genuinely dominates the
+          slide rather than sitting in a large empty margin. Same gold-leaf
+          frame/corner ornaments as before, untouched in style — only the
+          photo's own size and the column's width share changed. */}
+      <motion.div
+        variants={scaleBlurVariant}
+        className="relative flex w-full flex-1 flex-col items-center justify-center overflow-hidden px-6 py-6 md:w-[62%] md:flex-none md:px-6 md:py-0"
+      >
+        <AmbientStars seed={6510 + index * 137} variant="photo" />
+
+        {index === 0 && (
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="relative z-10 mb-6 text-center text-xs uppercase tracking-[0.4em] text-[#e8b4bc]/70 sm:text-sm"
+          >
+            Moments, Framed
+          </motion.p>
+        )}
+
+        {/* Soft warm glow behind the frame — style/opacity/technique
+            unchanged (this isn't the ambient star/glow system itself,
+            which lives in AmbientStars above and stayed untouched; this is
+            a frame-coupled glow that has to scale with the frame or it
+            gets eclipsed by it, same reasoning as the previous pass's size
+            bump). Re-sized again here to keep exceeding the now-larger
+            photo's bounds. Placed before the button in DOM order (both
+            default `static` stacking, so first-in-DOM paints behind)
+            rather than via a negative z-index. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute left-1/2 top-1/2 h-[95vh] w-[85vw] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl sm:w-[70vw] md:w-[62vw]"
+          style={{ background: "radial-gradient(circle, rgba(212,175,122,0.16) 0%, rgba(212,175,122,0) 70%)" }}
+        />
+
+        <button
+          type="button"
+          onClick={onOpen}
+          aria-label={caption ? `Enlarge photo: ${caption}` : `Enlarge memory ${index + 1}`}
+          className="group relative z-10 cursor-pointer rounded-md bg-gradient-to-br from-[#d4af7a] via-[#f2dfb0] to-[#9c7a45] p-[3px] shadow-2xl shadow-black/50 transition-shadow duration-500 hover:shadow-[0_0_32px_-4px_rgba(212,175,122,0.5)] sm:p-[5px]"
+        >
+          <CornerOrnament position="tl" />
+          <CornerOrnament position="tr" />
+          <CornerOrnament position="bl" />
+          <CornerOrnament position="br" />
+          <FrameStarAccent position="tl" />
+          <FrameStarAccent position="br" />
+
+          <div className="rounded-[4px] bg-gradient-to-br from-[#f7ecd2] to-[#ecdab0] p-3 shadow-inner shadow-black/15 sm:p-5">
+            {/* Mobile: ~58vh, unchanged from the prior pass (this fix is
+                scoped to the split desktop layout, per the brief). md+:
+                92vh (up from 78vh) — "near 100dvh" while still leaving a
+                margin so the frame never touches the viewport edge — with
+                a wider max-width (54vw, up from 42vw; lg cap raised from
+                520px to 760px) matching the column's new 62% share.
+                object-contain resolves whichever bound (height or width)
+                actually binds for a given photo's own aspect ratio. */}
+            <Image
+              src={src}
+              alt={`Memory ${index + 1}`}
+              width={width}
+              height={height}
+              sizes="(max-width: 767px) 88vw, 54vw"
+              className="block h-auto max-h-[58vh] w-auto max-w-[88vw] rounded-sm object-contain transition-transform duration-500 ease-out group-hover:scale-[1.02] md:max-h-[92vh] md:max-w-[54vw] lg:max-w-[760px]"
+            />
+          </div>
+        </button>
+      </motion.div>
+
+      {/* Caption half — now ~38% of the slide's width on desktop (down
+          from 50%), still its own dedicated panel with guaranteed contrast
+          against the plain dark background, never overlaid on the photo.
+          Horizontal padding trimmed slightly (md:px-8, down from md:px-16)
+          so the narrower column still has real usable width for the text
+          rather than padding eating most of it — the caption's own text
+          styling (size/color/italic/weight) is unchanged. */}
+      <motion.div
+        variants={fadeUpVariant}
+        className="relative flex w-full flex-1 flex-col items-center justify-center overflow-hidden px-6 py-8 md:w-[38%] md:flex-none md:px-8 md:py-0"
+      >
+        <AmbientStars seed={6510 + index * 137 + 53} variant="caption" />
+
+        <div className="relative z-10 flex max-w-md flex-col items-center text-center">
+          <span
+            aria-hidden="true"
+            className="h-2.5 w-2.5 rotate-45 bg-[#f2dfb0] shadow-[0_0_10px_rgba(212,175,122,0.6)]"
+          />
+
+          <p
+            className="font-display mt-6 text-2xl italic leading-snug text-[#f2dfb0] sm:text-3xl md:text-4xl"
+            style={{ textShadow: "0 0 20px rgba(212,175,122,0.25)" }}
+          >
+            {caption}
+          </p>
+
+          <span className="mt-6 h-px w-16 bg-gradient-to-r from-transparent via-[#d4af7a] to-transparent" />
+        </div>
+      </motion.div>
+
+      {!isLast && <ScrollHint />}
+    </motion.div>
+  );
+}
+
+// V2's counterpart to V1's gallery/SunlitPolaroids.tsx — same "one real
+// memory per frame" intent, staged as a full-screen cinematic experience
+// (CSS scroll-snap, one photo per viewport height) via a split-screen story
+// spread rather than a single centered photo-and-caption stack.
+//
+// SCROLL-SNAP FIX: the previous version wrapped all the slides in their own
+// `h-dvh overflow-y-scroll snap-y snap-mandatory` container — a fixed-height
+// box with its own overflow, nested inside the page's normal scroll flow.
+// That's a genuinely separate scrolling context with its own scrollbar,
+// alongside the page's own scrollbar for everything else — the double
+// scrollbar this fix addresses, same root-cause shape as the earlier
+// SunlitPolaroids issue this session (a fixed-dimension container whose
+// overflow setting didn't match how its content was actually meant to
+// scroll). CSS scroll-snap-type only has any effect on the element that's
+// genuinely the scroll container for that axis; since this section is
+// meant to scroll as part of the PAGE's own single scroll (not a nested
+// box), scroll-snap-type has to live on whatever the real scrolling
+// element is — here, `<html>`/`<body>` (rendered by app/layout.tsx, not
+// this file). The `useEffect` below sets it there imperatively for as long
+// as this component is mounted, then restores whatever was there before on
+// unmount — the same pattern this file's own Lightbox already uses to lock
+// scroll on both elements (covering both because this app's layout makes
+// it ambiguous which one is really the scrolling element). Individual
+// slides keep `snap-center`; nothing else about how scroll-snap-align
+// works changes. With the nested h-dvh/overflow-y-scroll wrapper gone,
+// this section is now just a very tall section in the page's normal block
+// flow — like every other section — so there's exactly one scrollbar.
+//
+// Each slide (see GallerySlide above) keeps the prior pass's ornamentation
+// (CornerOrnament, FrameStarAccent, the per-half AmbientStars atmosphere,
+// the caption's flourish) and alternates which side the photo sits on
+// (isReversed = index % 2 === 1) — all untouched by this pass, which is
+// scoped to the scrollbar, the reveal trigger, and photo/frame sizing.
+//
+// Click-to-enlarge lightbox (see Lightbox above) is completely unchanged —
+// same prev/next wraparound navigation, Escape/backdrop-click/X close, in
+// V2's own dark burgundy/gold tokens throughout.
 export default function MemoryGallery({ photos }: MemoryGalleryProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const previousHtmlSnap = html.style.scrollSnapType;
+    const previousBodySnap = body.style.scrollSnapType;
+    html.style.scrollSnapType = "y mandatory";
+    body.style.scrollSnapType = "y mandatory";
+    return () => {
+      html.style.scrollSnapType = previousHtmlSnap;
+      body.style.scrollSnapType = previousBodySnap;
+    };
+  }, []);
+
   return (
-    <section className="relative overflow-hidden px-6 py-[120px]">
-      <AmbientStars />
-
-      <div className="relative mx-auto max-w-2xl">
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.6 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="mb-14 text-center text-xs uppercase tracking-[0.4em] text-[#e8b4bc]/70 sm:text-sm"
-        >
-          Moments, Framed
-        </motion.p>
-
-        {photos.map((photo, index) => {
-          const { src, caption } = photo;
-          const { width, height } = getDimensions(src);
-          const isFeature = index % 3 === 0;
-          const targetHeight = isFeature ? FEATURE_HEIGHT : COMPANION_HEIGHT;
-          // Ideal width for that target height at this photo's true aspect
-          // ratio, plus the frame's own chrome (gradient border + mat
-          // padding), so the FRAME's width resolves the photo itself to
-          // ~idealWidth. Lives on the frame div, not the inner image box —
-          // see the original version of this file for the full explanation
-          // of why (a flex child under `items-center` shrink-wraps to its
-          // content's width; a percentage-based inner box would be
-          // resolving against a parent waiting on it to size first, which
-          // collapses to 0).
-          const idealWidth = Math.round(targetHeight * (width / height));
-          const FRAME_CHROME_PX = 33; // ~3px gradient border + 12px mat padding, both sides
-          const frameWidth = idealWidth + FRAME_CHROME_PX;
-
-          return (
-            <motion.div
-              key={src + index}
-              initial={{ opacity: 0, y: 32 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.9, ease: "easeOut" }}
-              className="group relative mb-24 flex flex-col items-center last:mb-0 sm:mb-32"
-            >
-              {/* Gold-leaf frame: a metallic gradient border (not a flat
-                  line) wrapping a gradient mat with an inset shadow for
-                  real depth, plus a diamond ornament at each corner and a
-                  soft gold glow that blooms in on hover. */}
-              <button
-                type="button"
-                onClick={() => setLightboxIndex(index)}
-                aria-label={caption ? `Enlarge photo: ${caption}` : `Enlarge memory ${index + 1}`}
-                className="relative cursor-pointer rounded-md bg-gradient-to-br from-[#d4af7a] via-[#f2dfb0] to-[#9c7a45] p-[3px] shadow-2xl shadow-black/50 transition-shadow duration-500 group-hover:shadow-[0_0_32px_-4px_rgba(212,175,122,0.5)]"
-                style={{ width: `min(${frameWidth}px, 100%)` }}
-              >
-                <CornerOrnament position="tl" />
-                <CornerOrnament position="tr" />
-                <CornerOrnament position="bl" />
-                <CornerOrnament position="br" />
-
-                <div className="rounded-[4px] bg-gradient-to-br from-[#f7ecd2] to-[#ecdab0] p-3 shadow-inner shadow-black/15">
-                  <div
-                    className="relative w-full overflow-hidden"
-                    style={{ aspectRatio: `${width} / ${height}` }}
-                  >
-                    <Image
-                      src={src}
-                      alt={`Memory ${index + 1}`}
-                      fill
-                      sizes="(max-width: 640px) 90vw, 640px"
-                      className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-                    />
-                  </div>
-                </div>
-              </button>
-
-              {/* Wall label — a museum-placard composition (flanking lines
-                  + a center diamond) rather than one plain divider, with a
-                  soft warm glow on the caption text. */}
-              <div className="mt-6 flex flex-col items-center gap-2.5">
-                <div className="flex items-center gap-2">
-                  <span className="h-px w-6 bg-gradient-to-r from-transparent to-[#d4af7a]/80" />
-                  <span className="h-1 w-1 rotate-45 bg-[#d4af7a]" />
-                  <span className="h-px w-6 bg-gradient-to-l from-transparent to-[#d4af7a]/80" />
-                </div>
-                <p
-                  className="font-display max-w-xs text-center text-xs uppercase tracking-[0.25em] text-[#e8d4b0]"
-                  style={{ textShadow: "0 0 14px rgba(212,175,122,0.35)" }}
-                >
-                  {caption}
-                </p>
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
+    <section className="relative">
+      {photos.map((photo, index) => (
+        <GallerySlide
+          key={photo.src + index}
+          photo={photo}
+          index={index}
+          isLast={index === photos.length - 1}
+          onOpen={() => setLightboxIndex(index)}
+        />
+      ))}
 
       {lightboxIndex !== null && (
         <Lightbox

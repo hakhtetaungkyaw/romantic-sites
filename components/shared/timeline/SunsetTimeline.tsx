@@ -331,7 +331,7 @@ export default function SunsetTimeline({ milestones }: SunsetTimelineProps) {
             <motion.p
               initial={{ opacity: 0, y: 12 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.5 }}
+              viewport={{ once: false, amount: 0.5 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
               className="font-display text-xs uppercase tracking-[0.35em] text-[#4a2f26]/60 sm:text-sm"
             >
@@ -340,55 +340,71 @@ export default function SunsetTimeline({ milestones }: SunsetTimelineProps) {
           </div>
 
           <div ref={contentRef} className="relative mx-auto max-w-4xl pb-20">
-            {entries.map((milestone, index) => (
-              <div
-                key={milestone.date + milestone.title + index}
-                className="flex justify-start pt-10 md:gap-10 md:pt-24"
-              >
-                <div className="sticky top-40 z-40 flex max-w-xs items-center self-start md:w-full md:max-w-sm">
-                  <SunflowerDot />
-                  <div className="hidden md:block md:pl-20">
-                    <p className="font-display text-2xl text-[#4a2f26] md:text-3xl">
-                      {milestone.date}
-                    </p>
-                    <DateFlourish />
+            {entries.map((milestone, index) => {
+              // Desktop-only zigzag: even-indexed entries (2nd, 4th, 6th...)
+              // mirror the row via flex-row-reverse, swapping which side the
+              // marker+date column vs. the card column render on. Mobile
+              // stays untouched (this class is md:-prefixed only, so below
+              // that breakpoint both columns keep their existing order).
+              // SunflowerDot is absolutely positioned inside its own
+              // wrapper (`absolute left-2`, not a normal flex child), so it
+              // isn't affected by the reverse directly — it simply follows
+              // whichever side its wrapper now renders on, which is exactly
+              // the swap this needs. The vine's own SVG (VINE_CENTER_X,
+              // buildVinePath, buildVineLeaves, the absolute left-0 SVGs
+              // below) is untouched — same fixed spine, unrelated to this
+              // per-row flex order.
+              const isFlipped = index % 2 === 1;
+              return (
+                <div
+                  key={milestone.date + milestone.title + index}
+                  className={`flex justify-start pt-10 md:gap-10 md:pt-24 ${isFlipped ? "md:flex-row-reverse" : ""}`}
+                >
+                  <div className="sticky top-40 z-40 flex max-w-xs items-center self-start md:w-full md:max-w-sm">
+                    <SunflowerDot />
+                    <div className="hidden md:block md:pl-20">
+                      <p className="font-display text-2xl text-[#4a2f26] md:text-3xl">
+                        {milestone.date}
+                      </p>
+                      <DateFlourish />
+                    </div>
                   </div>
-                </div>
 
-                <div className="relative w-full pl-20 pr-4 md:pl-4">
-                  <div className="mb-3 md:hidden">
-                    <p className="font-display text-base text-[#4a2f26]">{milestone.date}</p>
-                    <DateFlourish />
+                  <div className="relative w-full pl-20 pr-4 md:pl-4">
+                    <div className="mb-3 md:hidden">
+                      <p className="font-display text-base text-[#4a2f26]">{milestone.date}</p>
+                      <DateFlourish />
+                    </div>
+                    {/* Each card gets its OWN independent whileInView trigger
+                        (initial="hidden" whileInView="visible" here, not a
+                        shared staggerContainerVariant ancestor) — entries are
+                        spread down a long scrolling section and need to
+                        reveal as EACH one individually crosses into view,
+                        not all at once whenever some single shared container
+                        first becomes visible. Fully independent of the
+                        useScroll/useTransform vine-line animation above
+                        (that reads scrollYProgress off `containerRef`, the
+                        whole section, and drives heightTransform/
+                        opacityTransform directly via style — no shared refs,
+                        state, or MotionValues with this card-level
+                        whileInView, so neither can double-trigger or
+                        interfere with the other). */}
+                    <motion.div
+                      initial="hidden"
+                      whileInView="visible"
+                      viewport={viewportOnce}
+                      variants={fadeUpVariant}
+                    >
+                      <MilestoneCard
+                        title={milestone.title}
+                        description={milestone.description}
+                        photo={milestone.photo}
+                      />
+                    </motion.div>
                   </div>
-                  {/* Each card gets its OWN independent whileInView trigger
-                      (initial="hidden" whileInView="visible" here, not a
-                      shared staggerContainerVariant ancestor) — entries are
-                      spread down a long scrolling section and need to
-                      reveal as EACH one individually crosses into view,
-                      not all at once whenever some single shared container
-                      first becomes visible. Fully independent of the
-                      useScroll/useTransform vine-line animation above
-                      (that reads scrollYProgress off `containerRef`, the
-                      whole section, and drives heightTransform/
-                      opacityTransform directly via style — no shared refs,
-                      state, or MotionValues with this card-level
-                      whileInView, so neither can double-trigger or
-                      interfere with the other). */}
-                  <motion.div
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={viewportOnce}
-                    variants={fadeUpVariant}
-                  >
-                    <MilestoneCard
-                      title={milestone.title}
-                      description={milestone.description}
-                      photo={milestone.photo}
-                    />
-                  </motion.div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {/* Faint full-length guide: the vine's whole eventual path,
                 always visible at low opacity (same top/bottom fade-mask

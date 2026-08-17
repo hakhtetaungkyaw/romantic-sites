@@ -3,7 +3,6 @@
 import { motion, useMotionTemplate, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 
-import CursorGlow from "@/components/shared/ambient/CursorGlow";
 import NightSky from "@/components/shared/ambient/NightSky";
 import Signature from "@/components/shared/closing/Signature";
 import GlassCards from "@/components/shared/countdown/GlassCards";
@@ -43,7 +42,6 @@ export default function AnniversaryV2({ data }: AnniversaryV2Props) {
   } = data;
 
   const heroVideo = videos?.find((video) => video.role === "hero");
-  const momentVideo = videos?.filter((video) => video.role === "moment")[0];
   const song = songs?.[0];
 
   const songPlayerRef = useRef<SongPlayerHandle>(null);
@@ -77,7 +75,6 @@ export default function AnniversaryV2({ data }: AnniversaryV2Props) {
           className="relative min-h-screen overflow-hidden"
           style={{ background }}
         >
-          <CursorGlow />
           <ScrollProgressIndicator />
           <LoveNote note={secretNote} />
 

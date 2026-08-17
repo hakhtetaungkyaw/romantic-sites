@@ -443,17 +443,25 @@ export default function SunflowerCountdown({
             <motion.div
               key={unit.label}
               variants={fadeUpVariant}
-              // Card treatment unified with timeline/SunsetTimeline.tsx's
-              // MilestoneCard: the terracotta left-edge accent strip
-              // (border-l-4 border-l-[#d97a5f]), the same warm gradient
-              // fill (bg-gradient-to-br from-[#fdf6ec] to-[#f3e2c9], not
-              // flat cream), and the same shadow weight (shadow-lg
-              // shadow-[#6b4332]/15, up from shadow-md/10) — so both
-              // sections' cards read as one design language. Size/layout
-              // (w-[74px]/w-20, py-4/py-5, rounded-2xl, the existing
-              // border-[#c9a68a]/40) and everything inside the card are
-              // unchanged.
-              className="relative flex w-[74px] flex-col items-center gap-1.5 rounded-2xl border border-[#c9a68a]/40 border-l-4 border-l-[#d97a5f] bg-gradient-to-br from-[#fdf6ec] to-[#f3e2c9] py-4 shadow-lg shadow-[#6b4332]/15 sm:w-20 sm:py-5"
+              // Previously unified with timeline/SunsetTimeline.tsx's
+              // MilestoneCard (same border-l-4 accent strip, same
+              // shadow-[#6b4332]/15 weight) — with Timeline, Gallery, and
+              // Countdown now meant to read as visually distinct "acts",
+              // that shared chrome made this compact digit tile feel like a
+              // shrunken copy of Timeline's wide content card rather than
+              // its own thing. Chrome-only differentiation, nothing else
+              // touched: rounder corners (rounded-2xl -> rounded-3xl, more
+              // medallion-like for a small tile than a content card),
+              // no left-edge accent strip (a symmetric border instead, at a
+              // touch more opacity — /40 -> /50 — since there's no strip
+              // adding visual weight anymore), a top-down gradient instead
+              // of MilestoneCard's diagonal one (suits a small symmetric
+              // tile better than a wide rectangle), and a warm
+              // terracotta-tinted shadow (shadow-[#d97a5f]/20) instead of
+              // MilestoneCard's neutral brown one, fitting this section's
+              // "blooming" motif. Size/layout (w-[74px]/w-20, py-4/py-5)
+              // and everything inside the card are unchanged.
+              className="relative flex w-[74px] flex-col items-center gap-1.5 rounded-3xl border border-[#c9a68a]/50 bg-gradient-to-b from-[#fdf6ec] to-[#f3e2c9] py-4 shadow-lg shadow-[#d97a5f]/20 sm:w-20 sm:py-5"
             >
               <DigitBloom />
               <motion.span

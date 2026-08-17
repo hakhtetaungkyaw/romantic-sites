@@ -4,6 +4,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useState } from "react";
 
+import { fadeUpVariant, viewportRepeat } from "@/lib/v2ScrollReveal";
+
 interface LoveNoteProps {
   note?: string;
 }
@@ -34,13 +36,17 @@ export default function LoveNote({ note }: LoveNoteProps) {
 
   return (
     <>
+      {/* Only the closed tab's own initial entrance uses the shared reveal
+          system — the open/close popover below is untouched interaction
+          logic, not a scroll reveal. */}
       <motion.button
         type="button"
         onClick={handleTabClick}
         aria-label="Read a little note"
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
+        initial="hidden"
+        whileInView="visible"
+        viewport={viewportRepeat}
+        variants={fadeUpVariant}
         className="fixed bottom-6 left-6 z-30 flex h-11 w-11 items-center justify-center rounded-full border border-[#d4af7a]/30 bg-[#1a0a12]/60 text-[#d4af7a] shadow-lg shadow-black/30 backdrop-blur-md transition-colors hover:border-[#d4af7a]/60"
       >
         <motion.span

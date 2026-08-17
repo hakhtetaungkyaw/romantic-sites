@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react";
 
 import FloatingHearts from "@/components/shared/ambient/FloatingHearts";
 import { formatPeopleHeading } from "@/lib/people";
+import { fadeUpVariant, staggerContainerVariant, viewportRepeat } from "@/lib/v2ScrollReveal";
 import type { SitePerson } from "@/types/site";
 
 interface CinematicHeroProps {
@@ -97,48 +98,63 @@ export default function CinematicHero({
       </div>
 
       <div className="relative z-10">
-        <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, ease: "easeOut" }}
-          className="mb-5 text-xs uppercase tracking-[0.4em] text-[#e8b4bc]/80 sm:text-sm"
-        >
-          A love story
-        </motion.p>
-
-        <h1 className="font-display text-5xl font-medium text-[#faf5f0] sm:text-6xl md:text-7xl">
-          <AnimatedName text={heading} />
-        </h1>
-
+        {/* AnimatedName (the couple-names heading below) is its own
+            letter-by-letter typing-style reveal — per the task spec, that
+            stays untouched and isn't wrapped in the shared system. Only the
+            secondary static text (this eyebrow + the tagline below) gets
+            the shared staggerContainerVariant/fadeUpVariant treatment. Note
+            this does shift their timing from the original hand-tuned
+            sequence (eyebrow at 0s, tagline at a 1.3s delay, after the
+            divider finished drawing at 1.1s) to firing together, near-
+            immediately, via the shared stagger — since this hero is the
+            first thing visible on load anyway (nothing to scroll into), the
+            practical effect is minor, but the tagline may now appear
+            slightly before the divider finishes drawing instead of after. */}
         <motion.div
-          className="mx-auto mt-7 flex justify-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 1.1 }}
+          initial="hidden"
+          whileInView="visible"
+          viewport={viewportRepeat}
+          variants={staggerContainerVariant}
         >
-          <svg width="120" height="2" viewBox="0 0 120 2" fill="none">
-            <motion.line
-              x1="0"
-              y1="1"
-              x2="120"
-              y2="1"
-              stroke="#d4af7a"
-              strokeWidth="1"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 1, ease: "easeOut", delay: 1.1 }}
-            />
-          </svg>
-        </motion.div>
+          <motion.p
+            variants={fadeUpVariant}
+            className="mb-5 text-xs uppercase tracking-[0.4em] text-[#e8b4bc]/80 sm:text-sm"
+          >
+            A love story
+          </motion.p>
 
-        <motion.h2
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, ease: "easeOut", delay: 1.3 }}
-          className="font-display mt-7 max-w-xl text-xl italic text-[#faf5f0]/80 sm:text-2xl"
-        >
-          {title}
-        </motion.h2>
+          <h1 className="font-display text-5xl font-medium text-[#faf5f0] sm:text-6xl md:text-7xl">
+            <AnimatedName text={heading} />
+          </h1>
+
+          <motion.div
+            className="mx-auto mt-7 flex justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 1.1 }}
+          >
+            <svg width="120" height="2" viewBox="0 0 120 2" fill="none">
+              <motion.line
+                x1="0"
+                y1="1"
+                x2="120"
+                y2="1"
+                stroke="#d4af7a"
+                strokeWidth="1"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 1, ease: "easeOut", delay: 1.1 }}
+              />
+            </svg>
+          </motion.div>
+
+          <motion.h2
+            variants={fadeUpVariant}
+            className="font-display mt-7 max-w-xl text-xl italic text-[#faf5f0]/80 sm:text-2xl"
+          >
+            {title}
+          </motion.h2>
+        </motion.div>
       </div>
 
       <motion.div

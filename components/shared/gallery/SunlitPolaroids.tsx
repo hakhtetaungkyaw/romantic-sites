@@ -53,6 +53,19 @@ function getDimensions(src: string) {
   return PHOTO_DIMENSIONS[filename] ?? DEFAULT_DIMENSIONS;
 }
 
+// Every 4th photo (index 3, 7, 11, ...) is a "featured" larger card — an
+// editorial rhythm instead of the previous uniform grid. Modulo-based (not
+// random) so it's stable across server/client and re-renders, same
+// reasoning as ROTATIONS/TAPE_SIDES/TAPE_COLORS below. sm:col-span-2 (see
+// the grid below) is what actually makes it bigger on desktop; on mobile's
+// 2-column grid it isn't spanned, so it renders at the same size as every
+// other card there.
+const FEATURED_INDEX_MODULO = 4;
+
+function isFeatured(index: number) {
+  return index % FEATURED_INDEX_MODULO === 3;
+}
+
 // Hand-placed, fixed values (not Math.random()) — same hydration-safety
 // reasoning as FLOWERS/CLOUDS elsewhere in V1: this needs to look like a
 // loosely-tossed scrapbook, not be perfectly aligned, but must render
@@ -395,9 +408,16 @@ export default function SunlitPolaroids({ photos }: SunlitPolaroidsProps) {
           (rotate * 2.5) and settling back — that overshoot doesn't have an
           equivalent in a shared, reusable variant without a second custom
           value, and wasn't worth the added complexity for a flourish this
-          subtle. */}
+          subtle.
+
+          sm:grid-flow-dense: without it, a col-span-2 featured card that
+          doesn't fit the current row's remaining columns just starts a new
+          row and leaves the gap behind it empty — dense backfills that gap
+          with whichever later standard-sized card fits, so the larger and
+          smaller cards actually interlock instead of leaving holes. Column
+          count itself (2 mobile / 3 sm+) is unchanged. */}
       <motion.div
-        className="mx-auto grid max-w-5xl grid-cols-2 gap-x-6 gap-y-14 sm:grid-cols-3 sm:gap-x-10 sm:gap-y-16"
+        className="mx-auto grid max-w-5xl grid-cols-2 gap-x-6 gap-y-14 sm:grid-cols-3 sm:grid-flow-dense sm:gap-x-10 sm:gap-y-16"
         initial="hidden"
         whileInView="visible"
         viewport={viewportOnce}
@@ -409,6 +429,7 @@ export default function SunlitPolaroids({ photos }: SunlitPolaroidsProps) {
           const rotate = ROTATIONS[index % ROTATIONS.length];
           const tapeSide = TAPE_SIDES[index % TAPE_SIDES.length];
           const tapeColor = TAPE_COLORS[index % TAPE_COLORS.length];
+          const featured = isFeatured(index);
 
           return (
             <motion.div
@@ -416,7 +437,7 @@ export default function SunlitPolaroids({ photos }: SunlitPolaroidsProps) {
               custom={rotate}
               variants={scaleBlurVariant}
               whileHover={{ rotate: 0, scale: 1.03 }}
-              className="relative flex flex-col items-center"
+              className={`relative flex flex-col items-center ${featured ? "sm:col-span-2" : ""}`}
             >
               <button
                 type="button"
@@ -428,13 +449,16 @@ export default function SunlitPolaroids({ photos }: SunlitPolaroidsProps) {
 
                 <div
                   className="relative w-full overflow-hidden bg-[#e8c4b0]"
-                  style={{ aspectRatio: `${width} / ${height}`, width: "min(220px, 100%)" }}
+                  style={{
+                    aspectRatio: `${width} / ${height}`,
+                    width: featured ? "min(460px, 100%)" : "min(220px, 100%)",
+                  }}
                 >
                   <Image
                     src={src}
                     alt={caption ?? `Memory ${index + 1}`}
                     fill
-                    sizes="(max-width: 640px) 45vw, 220px"
+                    sizes={featured ? "(max-width: 640px) 90vw, 460px" : "(max-width: 640px) 45vw, 220px"}
                     className="object-cover"
                   />
                 </div>
