@@ -15,7 +15,19 @@ interface TimelineOfUsProps {
 
 function TimelineDot({ delay }: { delay: number }) {
   return (
-    <div className="relative flex h-3 w-3 items-center justify-center sm:col-start-2 sm:mx-auto">
+    // mx-auto was previously sm:-only — below sm:, the grid's first column
+    // is a fixed 2rem (32px) track (grid-cols-[2rem_1fr]), and this dot has
+    // an explicit w-3 (12px) size, which CSS Grid's default alignment left-
+    // aligns rather than stretches (stretch only applies when a grid item's
+    // own width would otherwise be auto). Left-aligned, the dot's center
+    // sits at ~6px into that column — but the connecting line below is
+    // fixed at `left-4` (16px, the column's true midpoint: 32px / 2), so the
+    // line didn't actually run through the dots on mobile. Making mx-auto
+    // apply at every breakpoint (not just sm:) centers the dot in whichever
+    // 2rem column it's currently in — the same 32px first column on mobile
+    // (landing its center exactly on left-4's 16px) and the 2rem middle
+    // column at sm: (already correctly centered there, unchanged).
+    <div className="relative mx-auto flex h-3 w-3 items-center justify-center sm:col-start-2">
       <motion.div
         className="absolute inset-0 rounded-full bg-[#d4af7a]"
         animate={{ scale: [1, 2.4], opacity: [0.5, 0] }}

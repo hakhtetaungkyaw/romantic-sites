@@ -23,7 +23,13 @@ export default function StoryLetter({ message }: StoryLetterProps) {
           &ldquo;
         </span>
 
-        <p className="font-display relative text-lg leading-relaxed text-[#faf5f0]/90 first-letter:float-left first-letter:mr-3 first-letter:text-7xl first-letter:font-medium first-letter:leading-[0.8] first-letter:text-[#d4af7a] sm:text-xl">
+        {/* first-letter:text-6xl sm:first-letter:text-7xl — same fix as V1's
+            message/SealedLetter.tsx TypewriterText drop cap: a fixed 72px
+            first letter is proportionally large/cramped against this card's
+            ~263px content width on a 375px phone (max-w-[720px] card clamped
+            to viewport, minus its own px-8 padding), so it steps down one
+            size below sm: rather than staying fixed at every width. */}
+        <p className="font-display relative text-lg leading-relaxed text-[#faf5f0]/90 first-letter:float-left first-letter:mr-3 first-letter:text-6xl first-letter:font-medium first-letter:leading-[0.8] first-letter:text-[#d4af7a] sm:text-xl sm:first-letter:text-7xl">
           {message}
         </p>
 

@@ -135,11 +135,17 @@ export default function LoveNote({ note }: LoveNoteProps) {
               transition={{ duration: 0.35, ease: "easeOut" }}
               className="fixed bottom-24 left-6 z-40 max-w-xs rounded-2xl border border-[#d4af7a]/30 bg-[#1a0a12]/90 p-5 shadow-2xl shadow-black/40 backdrop-blur-md"
             >
+              {/* p-2.5 added (position nudged from right-3/top-3 to
+                  right-1.5/top-1.5 to compensate, keeping the icon itself
+                  visually in roughly the same spot) — the icon alone was a
+                  bare 14x14px tap target, well under the ~44px touch-target
+                  guideline; padding enlarges the tappable area without
+                  changing how the X itself looks. */}
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
                 aria-label="Close"
-                className="absolute right-3 top-3 text-[#faf5f0]/50 transition-colors hover:text-[#faf5f0]"
+                className="absolute right-1.5 top-1.5 p-2.5 text-[#faf5f0]/50 transition-colors hover:text-[#faf5f0]"
               >
                 <X size={14} />
               </button>
