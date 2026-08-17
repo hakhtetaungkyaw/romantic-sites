@@ -1,7 +1,10 @@
 "use client";
 
+import { Eye } from "lucide-react";
 import Image from "next/image";
 import type { CSSProperties, KeyboardEvent, MouseEvent } from "react";
+
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export interface ShowcaseTemplate {
   id: string;
@@ -11,11 +14,6 @@ export interface ShowcaseTemplate {
   price: number;
   previewImage: string | null;
 }
-
-const CATEGORY_LABELS: Record<string, string> = {
-  anniversary: "Anniversary",
-  birthday: "Birthday",
-};
 
 interface CardAccent {
   border: string;
@@ -76,6 +74,7 @@ interface TemplateCardProps {
 }
 
 export default function TemplateCard({ template, fallbackImage }: TemplateCardProps) {
+  const { t } = useLanguage();
   const demoUrl = `/preview/${template.componentKey}`;
   const accent = CARD_ACCENTS[template.componentKey] ?? DEFAULT_ACCENT;
 
@@ -102,13 +101,17 @@ export default function TemplateCard({ template, fallbackImage }: TemplateCardPr
     document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const handlePreviewClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    event.stopPropagation();
+  };
+
   return (
     <div
       role="link"
       tabIndex={0}
       onClick={openDemo}
       onKeyDown={handleKeyDown}
-      aria-label={`View demo of ${template.name} (opens in a new tab)`}
+      aria-label={t.showcase.viewDemoAria(template.name)}
       style={accentStyle}
       className="group mx-auto w-full max-w-[380px] cursor-pointer overflow-hidden rounded-lg border border-white/10 bg-white/[0.02] [border-bottom-width:2px] [border-bottom-color:var(--accent-border)] transition-[transform,box-shadow,border-color] duration-300 ease-out hover:-translate-y-1 hover:scale-[1.025] hover:[border-bottom-color:var(--accent-border-hover)] hover:shadow-[0_20px_48px_-18px_var(--accent-glow)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6366f1]"
     >
@@ -121,17 +124,28 @@ export default function TemplateCard({ template, fallbackImage }: TemplateCardPr
           className="object-cover"
         />
         <span className="absolute left-2 top-2 rounded-full border border-white/15 bg-black/50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[#e4e4e7] backdrop-blur-sm [border-color:var(--accent-badge-border)]">
-          {CATEGORY_LABELS[template.category] ?? template.category}
+          {t.showcase.filters[template.category as "anniversary" | "birthday"] ??
+            template.category}
         </span>
       </div>
       <div className="p-4">
-        <h3 className="text-sm font-semibold text-[#f4f4f5]">{template.name}</h3>
+        <a
+          href={demoUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={handlePreviewClick}
+          className="relative z-10 inline-flex items-center gap-1 text-[11px] font-medium text-[#a1a1aa] transition-colors hover:text-[#f4f4f5]"
+        >
+          <Eye size={12} aria-hidden="true" />
+          {t.showcase.previewLabel}
+        </a>
+        <h3 className="mt-1.5 text-sm font-semibold text-[#f4f4f5]">{template.name}</h3>
         <button
           type="button"
           onClick={handleOrderClick}
           className="relative z-10 mt-4 w-full rounded-full bg-[#6366f1] px-3 py-2 text-center text-xs font-medium text-white transition-colors hover:bg-[#5457e5]"
         >
-          Order This Style
+          {t.showcase.orderThisStyle}
         </button>
       </div>
     </div>

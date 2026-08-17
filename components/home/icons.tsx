@@ -53,3 +53,27 @@ export function TikTokIcon({ size = 20, className }: IconProps) {
     </svg>
   );
 }
+
+/**
+ * Bootstrap Icons' "envelope" glyph (rounded rect + inner V flap) redrawn in
+ * the same stroke style as the icons above, for the email contact link.
+ */
+export function EmailIcon({ size = 20, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m3 7 9 6 9-6" />
+    </svg>
+  );
+}

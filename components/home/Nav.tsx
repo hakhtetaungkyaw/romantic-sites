@@ -3,18 +3,56 @@
 import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { TelegramIcon, TikTokIcon } from "@/components/home/icons";
+import { EmailIcon, TelegramIcon, TikTokIcon } from "@/components/home/icons";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
+import type { Lang } from "@/lib/i18n/homepage";
 
 const NAV_LINKS = [
-  { href: "#showcase", id: "showcase", label: "Templates" },
-  { href: "#how-it-works", id: "how-it-works", label: "How It Works" },
-  { href: "#contact", id: "contact", label: "Contact" },
+  { href: "#showcase", id: "showcase", key: "templates" as const },
+  { href: "#how-it-works", id: "how-it-works", key: "howItWorks" as const },
+  { href: "#contact", id: "contact", key: "contact" as const },
 ];
 
 const TIKTOK_URL = "https://www.tiktok.com/@vowxteam";
 const TELEGRAM_URL = "https://t.me/vowxteam";
+const EMAIL_ADDRESS = "vowxteam@gmail.com";
+
+function LanguageSegmentedControl({ size = "md" }: { size?: "md" | "sm" }) {
+  const { lang, setLang, t } = useLanguage();
+  const padding = size === "sm" ? "px-3 py-1.5" : "px-3.5 py-1.5";
+
+  const optionClass = (value: Lang) =>
+    `rounded-full ${padding} text-xs font-semibold transition-all duration-200 ${lang === value
+      ? "bg-[#6366f1] text-white"
+      : "text-[#a1a1aa] hover:text-[#f4f4f5]"
+    }`;
+
+  return (
+    <div className="flex items-center gap-0.5 rounded-full border border-white/10 bg-white/[0.03] p-0.5">
+      <button
+        type="button"
+        onClick={() => setLang("my")}
+        aria-pressed={lang === "my"}
+        aria-label={t.languageToggle.switchToBurmese}
+        className={optionClass("my")}
+      >
+        MY
+      </button>
+      <button
+        type="button"
+        onClick={() => setLang("en")}
+        aria-pressed={lang === "en"}
+        aria-label={t.languageToggle.switchToEnglish}
+        className={optionClass("en")}
+      >
+        EN
+      </button>
+    </div>
+  );
+}
 
 export default function Nav() {
+  const { t } = useLanguage();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
@@ -67,11 +105,10 @@ export default function Nav() {
 
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-50 transition-colors duration-300 ${
-        scrolled
-          ? "border-b border-white/10 bg-[#0a0a0b]/90 backdrop-blur-sm"
-          : "border-b border-transparent bg-transparent"
-      }`}
+      className={`fixed inset-x-0 top-0 z-50 transition-colors duration-300 ${scrolled
+        ? "border-b border-white/10 bg-[#0a0a0b]/90 backdrop-blur-sm"
+        : "border-b border-transparent bg-transparent"
+        }`}
     >
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 sm:px-10">
         <a
@@ -81,34 +118,29 @@ export default function Nav() {
           Vowx
         </a>
 
-        <div className="hidden items-center gap-8 md:flex">
+        <div className="hidden items-center gap-1 md:flex">
           {NAV_LINKS.map((link) => (
             <a
               key={link.href}
               href={link.href}
-              className={`text-sm transition-colors ${
-                activeSection === link.id
-                  ? "text-[#f4f4f5]"
-                  : "text-[#a1a1aa] hover:text-[#f4f4f5]"
-              }`}
-            >
-              {link.label}
-              <span
-                className={`mt-0.5 block h-px rounded-full transition-colors ${
-                  activeSection === link.id ? "bg-[#6366f1]" : "bg-transparent"
+              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200 ${activeSection === link.id
+                ? "bg-[#6366f1]/10 text-[#6366f1]"
+                : "text-[#a1a1aa] hover:text-[#f4f4f5]"
                 }`}
-              />
+            >
+              {t.nav[link.key]}
             </a>
           ))}
         </div>
 
         <div className="hidden items-center gap-4 md:flex">
+          <LanguageSegmentedControl />
           <a
             href={TELEGRAM_URL}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Telegram"
-            className="text-[#a1a1aa] transition-colors hover:text-[#f4f4f5]"
+            aria-label={t.nav.telegramLabel}
+            className="text-[#a1a1aa] transition-colors duration-200 hover:text-[#f4f4f5]"
           >
             <TelegramIcon size={18} />
           </a>
@@ -116,45 +148,55 @@ export default function Nav() {
             href={TIKTOK_URL}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="TikTok"
-            className="text-[#a1a1aa] transition-colors hover:text-[#f4f4f5]"
+            aria-label={t.nav.tiktokLabel}
+            className="text-[#a1a1aa] transition-colors duration-200 hover:text-[#f4f4f5]"
           >
             <TikTokIcon size={18} />
+          </a>
+          <a
+            href={`mailto:${EMAIL_ADDRESS}`}
+            aria-label={`${t.footer.emailLabel}: ${EMAIL_ADDRESS}`}
+            title={EMAIL_ADDRESS}
+            className="text-[#a1a1aa] transition-colors duration-200 hover:text-[#f4f4f5]"
+          >
+            <EmailIcon size={18} />
           </a>
           <a
             href="#contact"
             className="rounded-full bg-[#6366f1] px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-[#5457e5]"
           >
-            Order Now
+            {t.nav.orderNow}
           </a>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setMobileOpen((open) => !open)}
-          aria-label={mobileOpen ? "Close menu" : "Open menu"}
-          aria-expanded={mobileOpen}
-          className="text-[#f4f4f5] md:hidden"
-        >
-          {mobileOpen ? <X size={22} /> : <Menu size={22} />}
-        </button>
+        <div className="flex items-center gap-3 md:hidden">
+          <LanguageSegmentedControl size="sm" />
+          <button
+            type="button"
+            onClick={() => setMobileOpen((open) => !open)}
+            aria-label={mobileOpen ? t.nav.closeMenu : t.nav.openMenu}
+            aria-expanded={mobileOpen}
+            className="text-[#f4f4f5]"
+          >
+            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
       </nav>
 
       {mobileOpen && (
         <div className="border-t border-white/10 bg-[#0a0a0b] px-6 py-4 md:hidden">
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
             {NAV_LINKS.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileOpen(false)}
-                className={`text-sm transition-colors ${
-                  activeSection === link.id
-                    ? "text-[#f4f4f5]"
-                    : "text-[#a1a1aa] hover:text-[#f4f4f5]"
-                }`}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200 ${activeSection === link.id
+                  ? "bg-[#6366f1]/10 text-[#6366f1]"
+                  : "text-[#a1a1aa] hover:text-[#f4f4f5]"
+                  }`}
               >
-                {link.label}
+                {t.nav[link.key]}
               </a>
             ))}
             <a
@@ -162,27 +204,27 @@ export default function Nav() {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setMobileOpen(false)}
-              className="flex items-center gap-2 text-sm text-[#a1a1aa] transition-colors hover:text-[#f4f4f5]"
+              className="flex items-center gap-2 rounded-full px-4 py-2 text-sm text-[#a1a1aa] transition-colors duration-200 hover:text-[#f4f4f5]"
             >
               <TelegramIcon size={16} />
-              Telegram
+              {t.nav.telegramLabel}
             </a>
             <a
               href={TIKTOK_URL}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setMobileOpen(false)}
-              className="flex items-center gap-2 text-sm text-[#a1a1aa] transition-colors hover:text-[#f4f4f5]"
+              className="flex items-center gap-2 rounded-full px-4 py-2 text-sm text-[#a1a1aa] transition-colors duration-200 hover:text-[#f4f4f5]"
             >
               <TikTokIcon size={16} />
-              TikTok
+              {t.nav.tiktokLabel}
             </a>
             <a
               href="#contact"
               onClick={() => setMobileOpen(false)}
-              className="rounded-full bg-[#6366f1] px-5 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-[#5457e5]"
+              className="mt-3 rounded-full bg-[#6366f1] px-5 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-[#5457e5]"
             >
-              Order Now
+              {t.nav.orderNow}
             </a>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import Reveal from "@/components/home/Reveal";
 import TemplateCard, { type ShowcaseTemplate } from "@/components/home/TemplateCard";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export type { ShowcaseTemplate };
 
@@ -14,23 +15,21 @@ const FALLBACK_IMAGES = [
   "/demo-assets/photos/couple-09.jpg",
 ];
 
-const FILTERS = [
-  { key: "all", label: "All" },
-  { key: "anniversary", label: "Anniversary" },
-  { key: "birthday", label: "Birthday" },
-] as const;
+const FILTER_KEYS = ["all", "anniversary", "birthday"] as const;
 
-type FilterKey = (typeof FILTERS)[number]["key"];
+type FilterKey = (typeof FILTER_KEYS)[number];
 
 interface TemplateShowcaseProps {
   templates: ShowcaseTemplate[];
 }
 
 export default function TemplateShowcase({ templates }: TemplateShowcaseProps) {
+  const { t } = useLanguage();
   const [filter, setFilter] = useState<FilterKey>("all");
 
   const filtered = useMemo(
-    () => (filter === "all" ? templates : templates.filter((t) => t.category === filter)),
+    () =>
+      filter === "all" ? templates : templates.filter((template) => template.category === filter),
     [templates, filter],
   );
 
@@ -39,35 +38,30 @@ export default function TemplateShowcase({ templates }: TemplateShowcaseProps) {
       <div className="mx-auto max-w-6xl">
         <Reveal className="mx-auto max-w-xl text-center">
           <h2 className="text-3xl font-semibold tracking-tight text-[#f4f4f5] sm:text-4xl">
-            Choose your style
+            {t.showcase.heading}
           </h2>
-          <p className="mt-3 text-[#a1a1aa]">
-            Every template is fully personalized with your own photos, names, and
-            story.
-          </p>
+          <p className="mt-3 text-[#a1a1aa]">{t.showcase.subtitle}</p>
         </Reveal>
 
         <div className="mt-8 flex justify-center gap-2">
-          {FILTERS.map((f) => (
+          {FILTER_KEYS.map((key) => (
             <button
-              key={f.key}
+              key={key}
               type="button"
-              onClick={() => setFilter(f.key)}
-              className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${filter === f.key
+              onClick={() => setFilter(key)}
+              className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${filter === key
                   ? "border-[#6366f1] bg-[#6366f1]/10 text-[#f4f4f5]"
                   : "border-white/10 text-[#a1a1aa] hover:border-white/25 hover:text-[#f4f4f5]"
                 }`}
             >
-              {f.label}
+              {t.showcase.filters[key]}
             </button>
           ))}
         </div>
 
         {filtered.length === 0 ? (
           <p className="mt-14 text-center text-[#a1a1aa]">
-            {filter === "birthday"
-              ? "Birthday templates coming soon."
-              : "New templates are on the way — check back soon."}
+            {filter === "birthday" ? t.showcase.emptyBirthday : t.showcase.emptyGeneric}
           </p>
         ) : (
           <div className="mt-10 grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] items-start gap-6">
