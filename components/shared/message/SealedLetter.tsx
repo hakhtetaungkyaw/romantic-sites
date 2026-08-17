@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import Lottie from "lottie-react";
+import Lottie, { type LottieRefCurrentProps } from "lottie-react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
@@ -13,6 +13,8 @@ import {
   BUTTERFLY_FILTER_TERRACOTTA,
 } from "@/lib/v1ButterflyFilters";
 import { SUNFLOWER_CENTER_COLOR, SUNFLOWER_PETAL_COLOR } from "@/lib/v1SunflowerColors";
+import { fadeUpVariant, scaleBlurVariant, viewportOnce } from "@/lib/v1ScrollReveal";
+import { useV1InViewport } from "@/lib/useV1InViewport";
 
 import butterflyAnimation from "@/public/animations/butterfly.json";
 
@@ -147,8 +149,26 @@ const STICKER_SIZE = Math.round(34 * ENVELOPE_SCALE);
 // docked at either end (sticker or perched), which doubles as the "gentle
 // wing-flap/bob" the spec asks for at rest.
 function FlightButterfly({ size, docked }: { size: number; docked: boolean }) {
+  const lottieRef = useRef<LottieRefCurrentProps>(null);
+  // Same viewport-gated play/pause as every other Lottie in V1 — harmless
+  // no-op for the perched-in-modal usage of this component (the modal is
+  // always on screen while it exists, so isInView settles true almost
+  // immediately there), but meaningful for the docked-on-envelope usage:
+  // that instance sits in the section's normal scroll flow and can be
+  // scrolled past while still mounted (envelope closed, never opened).
+  const { ref: viewportRef, isInView } = useV1InViewport<HTMLDivElement>();
+
+  useEffect(() => {
+    if (isInView) {
+      lottieRef.current?.play();
+    } else {
+      lottieRef.current?.pause();
+    }
+  }, [isInView]);
+
   return (
     <motion.div
+      ref={viewportRef}
       layoutId={BUTTERFLY_LAYOUT_ID}
       className="pointer-events-none"
       style={{ width: size, height: size, filter: BUTTERFLY_FILTER_DUSTY_ROSE }}
@@ -158,7 +178,7 @@ function FlightButterfly({ size, docked }: { size: number; docked: boolean }) {
         rotate: { duration: docked ? 3.2 : 0.9, repeat: Infinity, ease: "easeInOut" },
       }}
     >
-      <Lottie animationData={butterflyAnimation} loop autoplay />
+      <Lottie animationData={butterflyAnimation} loop autoplay lottieRef={lottieRef} />
     </motion.div>
   );
 }
@@ -257,6 +277,46 @@ function useAmbientButterflies(count: number): AmbientButterflyConfig[] {
   );
 }
 
+// Pulled into its own component (rather than inlined in the .map() below)
+// for the same reason hero/SunsetHero.tsx's FlappingButterfly is: the
+// viewport-gated play/pause hook has to be called from a real component's
+// top level, not from inside an inline .map() callback.
+function AmbientButterfly({ b }: { b: AmbientButterflyConfig }) {
+  const lottieRef = useRef<LottieRefCurrentProps>(null);
+  const { ref: viewportRef, isInView } = useV1InViewport<HTMLDivElement>();
+
+  useEffect(() => {
+    if (isInView) {
+      lottieRef.current?.play();
+    } else {
+      lottieRef.current?.pause();
+    }
+  }, [isInView]);
+
+  return (
+    <motion.div
+      ref={viewportRef}
+      className="absolute"
+      style={{
+        left: `${b.left}%`,
+        top: `${b.top}%`,
+        width: b.size,
+        height: b.size,
+        opacity: 0.6,
+        filter: `${b.filter} blur(0.4px)`,
+      }}
+      animate={{
+        x: [0, b.driftX, 0, -b.driftX, 0],
+        y: [0, -b.driftY, 0, b.driftY, 0],
+        rotate: [0, -8, 0, 8, 0],
+      }}
+      transition={{ duration: b.duration, delay: b.delay, repeat: Infinity, ease: "easeInOut" }}
+    >
+      <Lottie animationData={butterflyAnimation} loop autoplay lottieRef={lottieRef} />
+    </motion.div>
+  );
+}
+
 function AmbientButterflies() {
   const butterflies = useAmbientButterflies(3);
 
@@ -269,26 +329,7 @@ function AmbientButterflies() {
       exit={{ opacity: 0, transition: { duration: 0.4 } }}
     >
       {butterflies.map((b) => (
-        <motion.div
-          key={b.id}
-          className="absolute"
-          style={{
-            left: `${b.left}%`,
-            top: `${b.top}%`,
-            width: b.size,
-            height: b.size,
-            opacity: 0.6,
-            filter: `${b.filter} blur(0.4px)`,
-          }}
-          animate={{
-            x: [0, b.driftX, 0, -b.driftX, 0],
-            y: [0, -b.driftY, 0, b.driftY, 0],
-            rotate: [0, -8, 0, 8, 0],
-          }}
-          transition={{ duration: b.duration, delay: b.delay, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <Lottie animationData={butterflyAnimation} loop autoplay />
-        </motion.div>
+        <AmbientButterfly key={b.id} b={b} />
       ))}
     </motion.div>
   );
@@ -627,7 +668,27 @@ export default function SealedLetter({ message }: SealedLetterProps) {
       <AnimatePresence>{!isOpen && <AmbientButterflies key="ambient-butterflies" />}</AnimatePresence>
 
       <div className="relative mx-auto flex max-w-[720px] flex-col items-center">
-        <AnimatePresence>{!isOpen && <Envelope onOpen={openLetter} />}</AnimatePresence>
+        {/* Scroll-into-view entrance ONLY — two plain wrapper motion.divs
+            around the existing AnimatePresence/Envelope, not any change to
+            Envelope's own props. Envelope already carries a lot of its own
+            animation state (layoutId FLIP for the open/close morph, a
+            perpetual idle float+wobble loop, whileHover/whileTap, its own
+            small opacity-only whileInView) — touching any of that directly
+            risked breaking already-tuned interaction logic the task
+            explicitly says not to touch. Composing fadeUpVariant (outer,
+            opacity+y) and scaleBlurVariant (inner, opacity+scale+blur) on
+            two wrappers instead achieves the same combined "fade+scale in"
+            entrance the task asks for while leaving Envelope's own JSX
+            completely untouched — nested motion components with a
+            `variants` prop and no own initial/animate automatically inherit
+            their nearest animating ancestor's current state, so both
+            wrappers (and by extension the Envelope inside them) animate in
+            together the first time this scrolls into view. */}
+        <motion.div initial="hidden" whileInView="visible" viewport={viewportOnce} variants={fadeUpVariant}>
+          <motion.div variants={scaleBlurVariant}>
+            <AnimatePresence>{!isOpen && <Envelope onOpen={openLetter} />}</AnimatePresence>
+          </motion.div>
+        </motion.div>
 
         <AnimatePresence>
           {!isOpen && (
@@ -705,7 +766,7 @@ export default function SealedLetter({ message }: SealedLetterProps) {
                       aria-modal="true"
                       aria-label="A letter"
                       transition={{ layout: { type: "spring", stiffness: 160, damping: 20 } }}
-                      // max-h-[85dvh] + overflow-y-auto (explicit
+                      // max-h-[88dvh] + overflow-y-auto (explicit
                       // overflow-x-hidden alongside it, not the bare
                       // `overflow-hidden` shorthand this used to be) — a
                       // long message on a short mobile viewport used to have
@@ -717,10 +778,23 @@ export default function SealedLetter({ message }: SealedLetterProps) {
                       // scrollbar bug (see gallery/SunlitPolaroids.tsx's own
                       // lightbox history) — with x explicitly hidden here,
                       // there's no `visible` axis left for that CSS rule to
-                      // promote. Invisible/no-op for any normal-length
-                      // message at any screen size; only engages once
-                      // content actually exceeds 85% of the viewport height.
-                      className="relative max-h-[85dvh] w-full overflow-y-auto overflow-x-hidden rounded-2xl border border-[#c9a68a]/60 bg-[#fdf6ec] px-8 py-14 shadow-[0_25px_50px_-12px_rgba(107,67,50,0.25),inset_0_0_0_1px_rgba(255,251,244,0.5)] sm:px-12 sm:py-16"
+                      // promote.
+                      //
+                      // FOLLOW-UP FIX: at 85dvh, a scrollbar was rendering
+                      // for ordinary, visually-complete-looking messages —
+                      // not a genuinely-too-long letter, just content
+                      // landing close enough to the old cap that classic
+                      // (non-overlay) desktop-browser scrollbars painted a
+                      // track for what was, in practice, only a few px of
+                      // real overflow. The fix is headroom, not a different
+                      // mechanism: mobile-only py-14 -> py-10 (unprefixed;
+                      // sm:py-16 untouched) frees 32px straight back to the
+                      // text, and the cap itself moved 85dvh -> 88dvh for a
+                      // bit more margin — still comfortably clear of the
+                      // real viewport at 375x667/390x844/414x896 once the
+                      // backdrop's own p-6 (48px total) is accounted for
+                      // (88% x 667 + 48 = 635px, vs. a 667px viewport).
+                      className="relative max-h-[88dvh] w-full overflow-y-auto overflow-x-hidden rounded-2xl border border-[#c9a68a]/60 bg-[#fdf6ec] px-8 py-10 shadow-[0_25px_50px_-12px_rgba(107,67,50,0.25),inset_0_0_0_1px_rgba(255,251,244,0.5)] sm:px-12 sm:py-16"
                     >
                       <PaperGrain />
 
@@ -730,7 +804,7 @@ export default function SealedLetter({ message }: SealedLetterProps) {
                           to stay a texture, not a competing pattern. */}
                       <div
                         aria-hidden="true"
-                        className="pointer-events-none absolute inset-x-8 top-14 bottom-14 sm:inset-x-12"
+                        className="pointer-events-none absolute inset-x-8 top-10 bottom-10 sm:inset-x-12"
                         style={{
                           backgroundImage:
                             "repeating-linear-gradient(to bottom, transparent, transparent 31px, rgba(201,166,138,0.16) 31px, rgba(201,166,138,0.16) 32px)",
@@ -746,9 +820,44 @@ export default function SealedLetter({ message }: SealedLetterProps) {
                         <CloseIcon />
                       </button>
 
+                      {/* overflow-hidden on both quote-mark spans: root
+                          cause of the "scrollbar even though every line is
+                          visible" bug — measured directly (Chromium
+                          devtools protocol, not estimated): with the card's
+                          own scrollHeight/clientHeight instrumented and each
+                          direct child individually toggled `display:none`
+                          to isolate which one moved the number, only the
+                          bottom-anchored closing-quote span changed
+                          anything — removing it dropped scrollHeight from
+                          389 to 373 (= clientHeight exactly), a 16px delta
+                          that matched no descendant's own measured
+                          getBoundingClientRect() (nothing exceeded 373.5 of
+                          374.5 available). That combination — contributes to
+                          scrollHeight, invisible in the actual rendered
+                          box — is a known browser quirk: a huge font-size
+                          (text-8xl/9xl) forced to leading-none can still
+                          reserve its font's natural (untruncated) descender
+                          metrics for scrollable-overflow purposes even
+                          though the visible/painted line box respects
+                          leading-none, and an absolutely positioned
+                          `bottom-0` box is exactly where that invisible
+                          reserve shows up as extra scrollHeight past the
+                          real content. Confirmed empirically both ways:
+                          adding overflow-hidden here dropped scrollHeight to
+                          exactly 373 (zero delta, no scrollbar) with the
+                          span's own rendered rect byte-identical (96px
+                          tall, same position) — nothing about how the glyph
+                          looks changes, only whether its internal metrics
+                          leak into the scrollable ancestor's overflow
+                          calculation. Applied to the opening quote too,
+                          defensively/symmetrically — it measured a 0px
+                          delta with this message (top-anchored, so it isn't
+                          currently the tallest-reaching element), but a
+                          short enough message could make it so, and this
+                          has no visual cost either way. */}
                       <span
                         aria-hidden="true"
-                        className="font-display pointer-events-none absolute left-4 top-0 select-none text-8xl leading-none text-[#c9a68a]/30 sm:left-6 sm:text-9xl"
+                        className="font-display pointer-events-none absolute left-4 top-0 overflow-hidden select-none text-8xl leading-none text-[#c9a68a]/30 sm:left-6 sm:text-9xl"
                       >
                         &ldquo;
                       </span>
@@ -764,7 +873,7 @@ export default function SealedLetter({ message }: SealedLetterProps) {
 
                       <span
                         aria-hidden="true"
-                        className="font-display pointer-events-none absolute bottom-0 right-4 select-none text-8xl leading-none text-[#c9a68a]/30 sm:right-6 sm:text-9xl"
+                        className="font-display pointer-events-none absolute bottom-0 right-4 overflow-hidden select-none text-8xl leading-none text-[#c9a68a]/30 sm:right-6 sm:text-9xl"
                       >
                         &rdquo;
                       </span>
@@ -775,14 +884,28 @@ export default function SealedLetter({ message }: SealedLetterProps) {
                         overflow-hidden clipping — see the comment on the
                         wrapper div above. z-20 keeps it explicitly above
                         the card even though DOM order alone would already
-                        put it there. Bottom-left is the only corner free
-                        of the close button (top-right) and both
-                        decorative quote marks (top-left, bottom-right).
-                        Container is sized to match FlightButterfly's own
-                        60px (not the modal's 40px close-button/icon
-                        scale) so the Lottie doesn't overflow the box it's
-                        positioned by. */}
-                    <div className="absolute -bottom-3 -left-3 z-20 h-[60px] w-[60px]">
+                        put it there. Container is sized to match
+                        FlightButterfly's own 60px (not the modal's 40px
+                        close-button/icon scale) so the Lottie doesn't
+                        overflow the box it's positioned by.
+                        Bottom-right (moved from bottom-left): clear of the
+                        close button, which sits in the opposite corner
+                        (top-right). It DOES share a corner with the
+                        closing &rdquo; mark below (bottom-0 right-4/6,
+                        text-8xl/9xl, 30% opacity) — hanging low right at
+                        the card's edge is a deliberate choice there, not an
+                        oversight: with leading-none, a quotation glyph's
+                        actual ink sits in the upper portion of its own em
+                        box (quote marks hang near cap-height, well short of
+                        the baseline), so the box's own lower third or so —
+                        exactly where this butterfly's -bottom-3 hang sits —
+                        reads as empty in practice even though the two
+                        elements' bounding boxes technically overlap. Not
+                        pixel-verified against a real render (skipped this
+                        pass per request) — if it still visibly collides,
+                        nudge this div's own -right-N/-bottom-N rather than
+                        moving the quote mark. */}
+                    <div className="absolute -bottom-3 -right-3 z-20 h-[60px] w-[60px]">
                       <FlightButterfly size={60} docked />
                     </div>
                   </div>

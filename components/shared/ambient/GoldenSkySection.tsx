@@ -1,11 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Lottie from "lottie-react";
+import Lottie, { type LottieRefCurrentProps } from "lottie-react";
 import Image from "next/image";
-import { useRef, useSyncExternalStore } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 
 import { formatPeopleHeading } from "@/lib/people";
+import { fadeUpVariant, scaleBlurVariant, staggerContainerVariant, viewportOnce } from "@/lib/v1ScrollReveal";
+import { useV1InViewport } from "@/lib/useV1InViewport";
 import type { SitePerson, SitePhoto } from "@/types/site";
 
 import sunflowerAnimation from "@/public/animations/sunflower.json";
@@ -578,22 +580,37 @@ function PhotoAccent({ photo }: { photo: SitePhoto }) {
 // the raw JSON directly: every animated layer's first keyframe (t=0)
 // exactly matches its last (t=113, just past the op=112 out-point), so it's
 // a properly-authored seamless loop — `loop` alone plays it with no visible
-// snap, no scroll-triggered play/pause control needed for that. The
-// wrapping <motion.div> still handles the section's own reveal-on-scroll
+// snap; that's unrelated to the play/pause wiring below, which is a
+// separate, performance-motivated concern (pausing the Lottie entirely
+// while this section is off screen), not anything to do with the loop seam.
+// The wrapping <motion.div> still handles the section's own reveal-on-scroll
 // beat (fade + scale up slightly, matching every other reveal in this
 // file), separate from the Lottie's own continuous breeze-loop playback.
 // Sits inside the z-10 content column, so it always paints above
 // FieldGlowPool/LightRays/Sun below regardless of DOM order.
+// No own initial/whileInView/transition anymore — this now sits inside
+// GoldenSkySection's shared staggerContainerVariant group (see the return
+// below) and gets its reveal via an inherited `variants={scaleBlurVariant}`
+// instead, so it fires in sequence with the heading/quote/love-note/photo
+// rather than on its own independent scroll trigger. `ref={viewportRef}` is
+// unrelated to that — it's the separate IntersectionObserver hook that
+// pauses this Lottie's playback while off screen, coexisting fine with
+// Framer Motion's own variant propagation on the same element.
 function SunflowerCenterpiece() {
+  const lottieRef = useRef<LottieRefCurrentProps>(null);
+  const { ref: viewportRef, isInView } = useV1InViewport<HTMLDivElement>();
+
+  useEffect(() => {
+    if (isInView) {
+      lottieRef.current?.play();
+    } else {
+      lottieRef.current?.pause();
+    }
+  }, [isInView]);
+
   return (
-    <motion.div
-      className="h-52 w-52 sm:h-64 sm:w-64"
-      initial={{ opacity: 0, scale: 0.85 }}
-      whileInView={{ opacity: 1, scale: 1 }}
-      viewport={{ once: true, amount: 0.5 }}
-      transition={{ duration: 1, ease: "easeOut" }}
-    >
-      <Lottie animationData={sunflowerAnimation} loop autoplay />
+    <motion.div ref={viewportRef} className="h-52 w-52 sm:h-64 sm:w-64" variants={scaleBlurVariant}>
+      <Lottie animationData={sunflowerAnimation} loop autoplay lottieRef={lottieRef} />
     </motion.div>
   );
 }
@@ -687,7 +704,21 @@ export default function GoldenSkySection({ people, groupTitle, specialDate, phot
           overflowing its own container — CAPTION/the date below keep the
           narrower max-w-lg reading width individually instead, so this
           widening only affects the row, not paragraph line length. */}
-      <div className="relative z-10 mx-auto flex w-full max-w-4xl flex-col items-center text-center">
+      {/* Heading/quote/love-note/photo/centerpiece now reveal together via
+          the shared V1 scroll-reveal system (lib/v1ScrollReveal.ts):
+          staggerContainerVariant on this wrapper cascades down to each
+          child's own variants prop in sequence, replacing what used to be
+          five independently hand-tuned initial/whileInView/transition
+          triples with per-child delay values. The date paragraph at the
+          bottom deliberately keeps its own separate whileInView (untouched)
+          — it wasn't part of what this task asked to group. */}
+      <motion.div
+        className="relative z-10 mx-auto flex w-full max-w-4xl flex-col items-center text-center"
+        initial="hidden"
+        whileInView="visible"
+        viewport={viewportOnce}
+        variants={staggerContainerVariant}
+      >
         {/* This section now opens the page (see templates/AnniversaryV1.tsx's
             section order), so it needs its own "whose site is this" beat —
             names first, then the atmospheric quote below, same reading
@@ -699,20 +730,14 @@ export default function GoldenSkySection({ people, groupTitle, specialDate, phot
             attention, so the names read as an opening beat here rather
             than the single dominant focal point Hero itself gave them. */}
         <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.6 }}
-          transition={{ duration: 1, ease: "easeOut" }}
+          variants={fadeUpVariant}
           className="font-display text-4xl font-normal text-[#4a2f26] sm:text-5xl md:text-6xl"
         >
           {heading}
         </motion.h1>
 
         <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.6 }}
-          transition={{ duration: 0.9, ease: "easeOut", delay: 0.2 }}
+          variants={fadeUpVariant}
           className="font-display mt-4 max-w-lg text-base italic text-[#4a2f26]/80 sm:text-lg"
         >
           {CAPTION}
@@ -735,26 +760,14 @@ export default function GoldenSkySection({ people, groupTitle, specialDate, phot
             since there's no runtime way to introspect exactly
             where within the Lottie's own bounding box the bloom sits. */}
         <div className="mt-10 flex w-full flex-col items-center gap-8 lg:flex-row lg:items-center lg:justify-center lg:gap-10">
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.5 }}
-            transition={{ duration: 0.8, ease: "easeOut", delay: 0.15 }}
-            className="flex justify-center lg:-mt-12"
-          >
+          <motion.div variants={fadeUpVariant} className="flex justify-center lg:-mt-12">
             <LoveNoteAccent />
           </motion.div>
 
           <SunflowerCenterpiece />
 
           {accentPhoto && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.5 }}
-              transition={{ duration: 0.8, ease: "easeOut", delay: 0.15 }}
-              className="flex justify-center lg:-mt-12"
-            >
+            <motion.div variants={scaleBlurVariant} className="flex justify-center lg:-mt-12">
               <PhotoAccent photo={accentPhoto} />
             </motion.div>
           )}
@@ -769,7 +782,7 @@ export default function GoldenSkySection({ people, groupTitle, specialDate, phot
         >
           {formatSpecialDate(specialDate)}
         </motion.p>
-      </div>
+      </motion.div>
     </section>
   );
 }

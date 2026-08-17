@@ -8,6 +8,7 @@ import { createPortal } from "react-dom";
 
 import { BUTTERFLY_FILTER_GOLD } from "@/lib/v1ButterflyFilters";
 import { SUNFLOWER_CENTER_COLOR, SUNFLOWER_PETAL_COLOR } from "@/lib/v1SunflowerColors";
+import { scaleBlurVariant, staggerContainerVariant, viewportOnce } from "@/lib/v1ScrollReveal";
 import type { SitePhoto } from "@/types/site";
 
 import butterflyAnimation from "@/public/animations/butterfly.json";
@@ -378,7 +379,30 @@ export default function SunlitPolaroids({ photos }: SunlitPolaroidsProps) {
 
   return (
     <section className="px-6 py-[120px]">
-      <div className="mx-auto grid max-w-5xl grid-cols-2 gap-x-6 gap-y-14 sm:grid-cols-3 sm:gap-x-10 sm:gap-y-16">
+      {/* Cards now reveal via the shared V1 scroll-reveal system
+          (lib/v1ScrollReveal.ts) instead of each hand-rolling its own
+          initial/whileInView/transition with a modulo-capped delay —
+          staggerContainerVariant on this grid cascades scaleBlurVariant
+          down to each card in sequence. scaleBlurVariant's `visible` state
+          accepts an optional per-instance `custom` rotate (see that file),
+          which is exactly what lets each card keep its own final resting
+          tilt (`custom={rotate}` below) while still pulling the shared,
+          centrally-defined opacity/scale/blur/timing rather than
+          redefining them locally. One deliberate, disclosed simplification
+          versus the previous version: cards now animate in from an upright
+          (0deg), faded/undersized/soft starting point straight to their
+          resting tilt, rather than first overshooting past it
+          (rotate * 2.5) and settling back — that overshoot doesn't have an
+          equivalent in a shared, reusable variant without a second custom
+          value, and wasn't worth the added complexity for a flourish this
+          subtle. */}
+      <motion.div
+        className="mx-auto grid max-w-5xl grid-cols-2 gap-x-6 gap-y-14 sm:grid-cols-3 sm:gap-x-10 sm:gap-y-16"
+        initial="hidden"
+        whileInView="visible"
+        viewport={viewportOnce}
+        variants={staggerContainerVariant}
+      >
         {photos.map((photo, index) => {
           const { src, caption } = photo;
           const { width, height } = getDimensions(src);
@@ -389,10 +413,8 @@ export default function SunlitPolaroids({ photos }: SunlitPolaroidsProps) {
           return (
             <motion.div
               key={src + index}
-              initial={{ opacity: 0, y: 28, rotate: rotate * 2.5 }}
-              whileInView={{ opacity: 1, y: 0, rotate }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.7, ease: "easeOut", delay: (index % 6) * 0.08 }}
+              custom={rotate}
+              variants={scaleBlurVariant}
               whileHover={{ rotate: 0, scale: 1.03 }}
               className="relative flex flex-col items-center"
             >
@@ -426,7 +448,7 @@ export default function SunlitPolaroids({ photos }: SunlitPolaroidsProps) {
             </motion.div>
           );
         })}
-      </div>
+      </motion.div>
 
       {lightboxIndex !== null && (
         <Lightbox

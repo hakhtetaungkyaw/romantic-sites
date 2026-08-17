@@ -1,11 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Lottie from "lottie-react";
-import { useRef, useSyncExternalStore } from "react";
+import Lottie, { type LottieRefCurrentProps } from "lottie-react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 
 import { formatPeopleHeading } from "@/lib/people";
 import { BUTTERFLY_FILTER_DUSTY_ROSE, BUTTERFLY_FILTER_GOLD } from "@/lib/v1ButterflyFilters";
+import { fadeUpVariant, scaleBlurVariant, staggerContainerVariant, viewportOnce } from "@/lib/v1ScrollReveal";
+import { useV1InViewport } from "@/lib/useV1InViewport";
 import type { SitePerson } from "@/types/site";
 
 import butterflyAnimation from "@/public/animations/butterfly.json";
@@ -199,15 +201,27 @@ function ClosingButterfly({
   style: React.CSSProperties;
   delay: number;
 }) {
+  const lottieRef = useRef<LottieRefCurrentProps>(null);
+  const { ref: viewportRef, isInView } = useV1InViewport<HTMLDivElement>();
+
+  useEffect(() => {
+    if (isInView) {
+      lottieRef.current?.play();
+    } else {
+      lottieRef.current?.pause();
+    }
+  }, [isInView]);
+
   return (
     <motion.div
+      ref={viewportRef}
       aria-hidden="true"
       className="pointer-events-none absolute"
       style={{ width: size, height: size, filter, ...style }}
       animate={{ rotate: [0, -6, 6, 0], y: [0, -3, 0] }}
       transition={{ duration: 3.4, delay, repeat: Infinity, ease: "easeInOut" }}
     >
-      <Lottie animationData={butterflyAnimation} loop autoplay />
+      <Lottie animationData={butterflyAnimation} loop autoplay lottieRef={lottieRef} />
     </motion.div>
   );
 }
@@ -269,78 +283,98 @@ export default function SunsetSignature({
   closingLine,
 }: SunsetSignatureProps) {
   const heading = formatPeopleHeading(people, groupTitle);
+  const centerpieceLottieRef = useRef<LottieRefCurrentProps>(null);
+  const { ref: centerpieceViewportRef, isInView: centerpieceInView } = useV1InViewport<HTMLDivElement>();
+
+  useEffect(() => {
+    if (centerpieceInView) {
+      centerpieceLottieRef.current?.play();
+    } else {
+      centerpieceLottieRef.current?.pause();
+    }
+  }, [centerpieceInView]);
 
   return (
     <section className="relative overflow-hidden px-6 pb-[140px] pt-[120px] text-center">
       <PetalDrift />
 
-      {/* text-[#4a2f26]/85 bumped to /95 in an earlier pass: at 85% opacity
-          the effective blended color, against this section's background at
-          the time (~#e2a077, a page-level gradient's darkest stop), computed
-          to a WCAG contrast ratio of ~4.17:1 — just under the 4.5:1 normal-
-          text AA floor at this text's mobile size (text-xl, too small to
-          qualify for the relaxed 3:1 large-text threshold). Re-checked again
-          against the current "Sand & Dusty Rose" gradient
-          (lib/v1SectionGradients.ts): /95 blends to ~4.8:1 against the
-          gradient's darkest stop (#c9a29b) — still clears AA, with less
-          margin than before but no failure, so no further change needed. */}
-      {closingLine && (
-        <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.5 }}
-          transition={{ duration: 0.9, ease: "easeOut" }}
-          className="font-display relative mx-auto max-w-xl text-xl italic text-[#4a2f26]/95 sm:text-2xl"
-        >
-          {closingLine}
-        </motion.p>
-      )}
-
+      {/* Quote/couple-names/flourish/centerpiece now reveal together via
+          the shared V1 scroll-reveal system (lib/v1ScrollReveal.ts) —
+          staggerContainerVariant on this wrapper cascades down to each of
+          those four's own variants prop in sequence. The glow
+          (CenterpieceGlow) and the two ClosingButterfly Lotties sit inside
+          this same wrapper's DOM subtree but are untouched and unaffected:
+          each already animates via its own explicit `animate` prop (a
+          plain object, not a `variants` reference), which is exactly what
+          keeps a motion component independent of whatever variant state an
+          ancestor propagates — only descendants that themselves use
+          `variants` (with no own initial/animate) inherit it. */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.9, rotate: -3 }}
-        whileInView={{ opacity: 1, scale: 1, rotate: -2 }}
-        viewport={{ once: true, amount: 0.5 }}
-        transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
-        className="relative mt-8 flex flex-col items-center"
+        initial="hidden"
+        whileInView="visible"
+        viewport={viewportOnce}
+        variants={staggerContainerVariant}
       >
-        {/* Checked, unchanged: full-opacity #4a2f26 against the current
-            "Sand & Dusty Rose" gradient computes to ~5.3:1 even at its
-            darkest stop (#c9a29b) — already clears normal-text AA (4.5:1)
-            with margin, no adjustment needed here. */}
-        <span className="font-display text-4xl italic text-[#4a2f26] sm:text-5xl">
-          {withAccentedAmpersands(heading)}
-        </span>
-        <span className="mt-2">
-          <SignatureFlourish />
-        </span>
+        {/* text-[#4a2f26]/85 bumped to /95 in an earlier pass: at 85% opacity
+            the effective blended color, against this section's background at
+            the time (~#e2a077, a page-level gradient's darkest stop), computed
+            to a WCAG contrast ratio of ~4.17:1 — just under the 4.5:1 normal-
+            text AA floor at this text's mobile size (text-xl, too small to
+            qualify for the relaxed 3:1 large-text threshold). Re-checked again
+            against the current "Sand & Dusty Rose" gradient
+            (lib/v1SectionGradients.ts): /95 blends to ~4.8:1 against the
+            gradient's darkest stop (#c9a29b) — still clears AA, with less
+            margin than before but no failure, so no further change needed. */}
+        {closingLine && (
+          <motion.p
+            variants={fadeUpVariant}
+            className="font-display relative mx-auto max-w-xl text-xl italic text-[#4a2f26]/95 sm:text-2xl"
+          >
+            {closingLine}
+          </motion.p>
+        )}
+
+        <div className="relative mt-8 flex flex-col items-center">
+          {/* Checked, unchanged: full-opacity #4a2f26 against the current
+              "Sand & Dusty Rose" gradient computes to ~5.3:1 even at its
+              darkest stop (#c9a29b) — already clears normal-text AA (4.5:1)
+              with margin, no adjustment needed here. */}
+          <motion.span
+            variants={fadeUpVariant}
+            className="font-display text-4xl italic text-[#4a2f26] sm:text-5xl"
+          >
+            {withAccentedAmpersands(heading)}
+          </motion.span>
+          <motion.span variants={fadeUpVariant} className="mt-2">
+            <SignatureFlourish />
+          </motion.span>
+        </div>
+
+        <div className="relative mx-auto mt-6 flex h-24 w-24 items-center justify-center sm:h-28 sm:w-28">
+          <CenterpieceGlow />
+
+          <ClosingButterfly
+            size={30}
+            filter={BUTTERFLY_FILTER_GOLD}
+            style={{ top: -12, left: -20 }}
+            delay={0}
+          />
+          <ClosingButterfly
+            size={26}
+            filter={BUTTERFLY_FILTER_DUSTY_ROSE}
+            style={{ bottom: -8, right: -18 }}
+            delay={1.6}
+          />
+
+          <motion.div
+            ref={centerpieceViewportRef}
+            variants={scaleBlurVariant}
+            className="relative z-10 h-full w-full"
+          >
+            <Lottie animationData={sunflowerAnimation} loop autoplay lottieRef={centerpieceLottieRef} />
+          </motion.div>
+        </div>
       </motion.div>
-
-      <div className="relative mx-auto mt-6 flex h-24 w-24 items-center justify-center sm:h-28 sm:w-28">
-        <CenterpieceGlow />
-
-        <ClosingButterfly
-          size={30}
-          filter={BUTTERFLY_FILTER_GOLD}
-          style={{ top: -12, left: -20 }}
-          delay={0}
-        />
-        <ClosingButterfly
-          size={26}
-          filter={BUTTERFLY_FILTER_DUSTY_ROSE}
-          style={{ bottom: -8, right: -18 }}
-          delay={1.6}
-        />
-
-        <motion.div
-          className="relative z-10 h-full w-full"
-          initial={{ opacity: 0, scale: 0.8 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true, amount: 0.5 }}
-          transition={{ duration: 1, ease: "easeOut", delay: 0.6 }}
-        >
-          <Lottie animationData={sunflowerAnimation} loop autoplay />
-        </motion.div>
-      </div>
     </section>
   );
 }

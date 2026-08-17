@@ -1,10 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Lottie from "lottie-react";
-import { useRef, useSyncExternalStore } from "react";
+import Lottie, { type LottieRefCurrentProps } from "lottie-react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 
 import { SUNFLOWER_CENTER_COLOR, SUNFLOWER_PETAL_COLOR } from "@/lib/v1SunflowerColors";
+import { fadeUpVariant, scaleBlurVariant, staggerContainerVariant, viewportOnce } from "@/lib/v1ScrollReveal";
+import { useV1InViewport } from "@/lib/useV1InViewport";
 
 import sunflowerAnimation from "@/public/animations/sunflower.json";
 
@@ -175,8 +177,15 @@ function VineConnectorDesktop() {
     // single-row horizontal vine, correct only when all 4 cards actually
     // fit on one line (sm:w-20 x4 + sm:gap-5 x3 = 380px, well under any sm+
     // viewport).
-    <div
+    // motion.div (not a plain div) + variants={fadeUpVariant}, no own
+    // initial/whileInView — this now sits inside SunflowerCountdown's
+    // shared staggerContainerVariant group (see the default export below),
+    // inheriting hidden/visible propagation from that ancestor rather than
+    // animating on its own. Everything else here (className, the SVGs
+    // inside) is unchanged.
+    <motion.div
       aria-hidden="true"
+      variants={fadeUpVariant}
       className="pointer-events-none absolute left-0 top-1/2 hidden h-10 w-full -translate-y-1/2 opacity-70 sm:block"
     >
       <svg
@@ -202,7 +211,7 @@ function VineConnectorDesktop() {
           />
         </svg>
       ))}
-    </div>
+    </motion.div>
   );
 }
 
@@ -249,8 +258,11 @@ const VINE_MOBILE_WIDTH = 160;
 
 function VineConnectorMobile() {
   return (
-    <div
+    // Same motion.div + inherited variants={fadeUpVariant} treatment as
+    // VineConnectorDesktop above, for the same reason.
+    <motion.div
       aria-hidden="true"
+      variants={fadeUpVariant}
       className="pointer-events-none absolute inset-y-0 left-1/2 w-[160px] -translate-x-1/2 opacity-70 sm:hidden"
     >
       <svg
@@ -276,7 +288,7 @@ function VineConnectorMobile() {
           />
         </svg>
       ))}
-    </div>
+    </motion.div>
   );
 }
 
@@ -316,6 +328,17 @@ const BLOOM_HEAD_CROP_RATIO = 0.55;
 // the 4 small golden-amber petal-path icons in the cards below, rather than
 // a 5th instance of the same small icon.
 function BloomCenterpiece() {
+  const lottieRef = useRef<LottieRefCurrentProps>(null);
+  const { ref: viewportRef, isInView } = useV1InViewport<HTMLDivElement>();
+
+  useEffect(() => {
+    if (isInView) {
+      lottieRef.current?.play();
+    } else {
+      lottieRef.current?.pause();
+    }
+  }, [isInView]);
+
   return (
     // 112px/144px wide — ~1.75x/1.8x the original 64px/80px, so this reads
     // as a clear unique focal point above the card row rather than just a
@@ -324,13 +347,17 @@ function BloomCenterpiece() {
     // BLOOM_HEAD_CROP_RATIO`, so its height is always exactly
     // BLOOM_HEAD_CROP_RATIO times its width), showing only the top slice of
     // the inner square.
+    //
+    // No own initial/whileInView/transition — inherits hidden/visible from
+    // SunflowerCountdown's shared staggerContainerVariant group via
+    // variants={scaleBlurVariant} instead, same as every other centerpiece
+    // across V1. ref={viewportRef} is the separate, unrelated
+    // IntersectionObserver hook pausing this Lottie while off screen.
     <motion.div
+      ref={viewportRef}
       className="mx-auto w-28 overflow-hidden sm:w-36"
       style={{ aspectRatio: `1 / ${BLOOM_HEAD_CROP_RATIO}` }}
-      initial={{ opacity: 0, scale: 0.85 }}
-      whileInView={{ opacity: 1, scale: 1 }}
-      viewport={{ once: true, amount: 0.6 }}
-      transition={{ duration: 0.8, ease: "easeOut" }}
+      variants={scaleBlurVariant}
     >
       {/* Full, un-cropped 1:1 render of the Lottie's own square canvas,
           top-aligned (no vertical offset needed — the head already starts
@@ -339,7 +366,7 @@ function BloomCenterpiece() {
           outside the frame and is clipped by that frame's overflow-hidden,
           while the animation itself keeps playing normally underneath. */}
       <div style={{ aspectRatio: "1 / 1" }}>
-        <Lottie animationData={sunflowerAnimation} loop autoplay />
+        <Lottie animationData={sunflowerAnimation} loop autoplay lottieRef={lottieRef} />
       </div>
     </motion.div>
   );
@@ -386,23 +413,36 @@ export default function SunflowerCountdown({
 
   return (
     <section className="px-6 py-[120px] text-center">
+      {/* Heading/centerpiece/vine/cards now reveal together via the shared
+          V1 scroll-reveal system (lib/v1ScrollReveal.ts) — staggerContainerVariant
+          on this wrapper cascades down to each child's own variants prop in
+          sequence, replacing the single flat fade+rise this whole block
+          used to share. The per-tick digit "pop" (the motion.span keyed on
+          unit.value below) is untouched — that's the countdown timer's own
+          live-update animation, not a scroll reveal, and firing every
+          second regardless of scroll position is exactly what it's
+          supposed to do. */}
       <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.5 }}
-        transition={{ duration: 0.9, ease: "easeOut" }}
+        initial="hidden"
+        whileInView="visible"
+        viewport={viewportOnce}
+        variants={staggerContainerVariant}
       >
         <BloomCenterpiece />
 
-        <p className="font-display mt-4 text-xs uppercase tracking-[0.35em] text-[#4a2f26]/60 sm:text-sm">
+        <motion.p
+          variants={fadeUpVariant}
+          className="font-display mt-4 text-xs uppercase tracking-[0.35em] text-[#4a2f26]/60 sm:text-sm"
+        >
           {label}
-        </p>
+        </motion.p>
 
         <div className="relative mt-6 flex flex-wrap justify-center gap-3 sm:gap-5">
           <VineConnector />
           {units.map((unit) => (
-            <div
+            <motion.div
               key={unit.label}
+              variants={fadeUpVariant}
               // Card treatment unified with timeline/SunsetTimeline.tsx's
               // MilestoneCard: the terracotta left-edge accent strip
               // (border-l-4 border-l-[#d97a5f]), the same warm gradient
@@ -428,7 +468,7 @@ export default function SunflowerCountdown({
               <span className="text-[10px] uppercase tracking-widest text-[#4a2f26]/50">
                 {unit.label}
               </span>
-            </div>
+            </motion.div>
           ))}
         </div>
       </motion.div>

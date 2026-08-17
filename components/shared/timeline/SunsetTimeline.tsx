@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 import { SUNFLOWER_CENTER_COLOR, SUNFLOWER_PETAL_COLOR } from "@/lib/v1SunflowerColors";
+import { fadeUpVariant, viewportOnce } from "@/lib/v1ScrollReveal";
 import type { SiteData } from "@/types/site";
 
 // V1 "Golden Hour / Sunset" design system — same palette established in
@@ -359,11 +360,32 @@ export default function SunsetTimeline({ milestones }: SunsetTimelineProps) {
                     <p className="font-display text-base text-[#4a2f26]">{milestone.date}</p>
                     <DateFlourish />
                   </div>
-                  <MilestoneCard
-                    title={milestone.title}
-                    description={milestone.description}
-                    photo={milestone.photo}
-                  />
+                  {/* Each card gets its OWN independent whileInView trigger
+                      (initial="hidden" whileInView="visible" here, not a
+                      shared staggerContainerVariant ancestor) — entries are
+                      spread down a long scrolling section and need to
+                      reveal as EACH one individually crosses into view,
+                      not all at once whenever some single shared container
+                      first becomes visible. Fully independent of the
+                      useScroll/useTransform vine-line animation above
+                      (that reads scrollYProgress off `containerRef`, the
+                      whole section, and drives heightTransform/
+                      opacityTransform directly via style — no shared refs,
+                      state, or MotionValues with this card-level
+                      whileInView, so neither can double-trigger or
+                      interfere with the other). */}
+                  <motion.div
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={viewportOnce}
+                    variants={fadeUpVariant}
+                  >
+                    <MilestoneCard
+                      title={milestone.title}
+                      description={milestone.description}
+                      photo={milestone.photo}
+                    />
+                  </motion.div>
                 </div>
               </div>
             ))}

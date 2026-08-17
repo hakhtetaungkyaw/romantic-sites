@@ -3,6 +3,7 @@ import { V1SongProvider } from "@/components/shared/audio/V1SongPlayer";
 import SunsetSignature from "@/components/shared/closing/SunsetSignature";
 import SunflowerCountdown from "@/components/shared/countdown/SunflowerCountdown";
 import SunlitPolaroids from "@/components/shared/gallery/SunlitPolaroids";
+import GiftBoxUnlock from "@/components/shared/hero/GiftBoxUnlock";
 import SunsetHero from "@/components/shared/hero/SunsetHero";
 import SealedLetter from "@/components/shared/message/SealedLetter";
 import SunsetTimeline from "@/components/shared/timeline/SunsetTimeline";
@@ -44,18 +45,20 @@ export default function AnniversaryV1({ data }: AnniversaryV1Props) {
         className="relative min-h-screen overflow-hidden"
         style={{ background: V1_BACKGROUND_GRADIENT }}
       >
-        <GoldenSkySection people={people} groupTitle={groupTitle} specialDate={specialDate} photos={photos} />
-        <SunsetHero people={people} groupTitle={groupTitle} title={title} />
+        <GiftBoxUnlock people={people} groupTitle={groupTitle}>
+          <GoldenSkySection people={people} groupTitle={groupTitle} specialDate={specialDate} photos={photos} />
+          <SunsetHero people={people} groupTitle={groupTitle} title={title} />
 
-        <SealedLetter message={message} />
+          <SealedLetter message={message} />
 
-        <SunlitPolaroids photos={photos} />
+          <SunlitPolaroids photos={photos} />
 
-        <SunsetTimeline milestones={milestones} />
+          <SunsetTimeline milestones={milestones} />
 
-        <SunflowerCountdown specialDate={specialDate} />
+          <SunflowerCountdown specialDate={specialDate} />
 
-        <SunsetSignature people={people} groupTitle={groupTitle} closingLine={closingLine} />
+          <SunsetSignature people={people} groupTitle={groupTitle} closingLine={closingLine} />
+        </GiftBoxUnlock>
       </main>
     </V1SongProvider>
   );

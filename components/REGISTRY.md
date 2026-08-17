@@ -51,6 +51,24 @@ unaware of the array shape.
   hearts scoped to this section only (imports `ambient/FloatingHearts` directly)
   — used in: V2 — props: `videoSrc: string`, `poster?: string`, `people:
   SitePerson[]`, `groupTitle?: string`, `title: string`
+- `GiftBoxUnlock.tsx` — V1 "Golden Hour" redesign's opening gate (renders
+  first, before `ambient/GoldenSkySection.tsx`), V1's counterpart to
+  `interactive/UnlockGate.tsx`: same "wrap children, gate them behind an
+  `opened` flag, lock body scroll until then" mechanism, reimplemented
+  locally rather than shared, styled as a wrapped gift box instead of a
+  pulsing heart. Idle-bounce cream/rose-gold box (own local bezier ribbon +
+  bow, a small sunflower-petal sticker reusing `lib/v1SunflowerColors.ts`,
+  and a resting `butterfly.json` Lottie tuned via `lib/v1ButterflyFilters.ts`)
+  with a "Tap to unwrap" caption; tapping plays a lid-lift + ribbon-fade, a
+  one-shot radial light burst, a randomized falling-petal burst
+  (hydration-safe `useSyncExternalStore` pattern, same as
+  `ambient/FloatingHearts.tsx`), and the butterfly launching off along an
+  arced flight path, before the couple's names fade/scale in (same heading
+  data via `lib/people.ts` and typography as `hero/SunsetHero.tsx`). Once
+  opened, the gate unmounts for the rest of the session and the wrapped
+  sections become scrollable — used in: V1 (wraps `ambient/GoldenSkySection.tsx`
+  and every section after it in `AnniversaryV1.tsx`) — props: `people:
+  SitePerson[]`, `groupTitle?: string`, `children: React.ReactNode`
 - `SunsetHero.tsx` — V1 "Golden Hour" redesign's hero (Section 1 of the new
   palette/motif system, see `PROJECT_CONTEXT.md` section 5): muted peach-to-cream
   gradient sky, corner sun glow, drifting warm light motes, a bottom sunflower

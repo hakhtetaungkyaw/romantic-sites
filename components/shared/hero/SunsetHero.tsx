@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Lottie, { type LottieRefCurrentProps } from "lottie-react";
-import { useRef, useSyncExternalStore } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 
 import { formatPeopleHeading } from "@/lib/people";
 import {
@@ -12,6 +12,8 @@ import {
   BUTTERFLY_FILTER_TERRACOTTA,
 } from "@/lib/v1ButterflyFilters";
 import { SUNFLOWER_CENTER_COLOR, SUNFLOWER_PETAL_COLOR } from "@/lib/v1SunflowerColors";
+import { fadeUpVariant, staggerContainerVariant, viewportOnce } from "@/lib/v1ScrollReveal";
+import { useV1InViewport } from "@/lib/useV1InViewport";
 import type { SitePerson } from "@/types/site";
 
 import butterflyAnimation from "@/public/animations/butterfly.json";
@@ -291,8 +293,29 @@ const BUTTERFLIES: ButterflyConfig[] = [
 // its own ref per instance, which needs its own component scope.
 function FlappingButterfly({ bf }: { bf: ButterflyConfig }) {
   const lottieRef = useRef<LottieRefCurrentProps>(null);
+  // Pauses this butterfly's Lottie playback whenever it scrolls out of view
+  // (rootMargin default gives it a 100px head start so it resumes just
+  // before re-entering, not the instant it's already visible) — 7 of these
+  // run at once across the hero, each with its own always-looping Lottie
+  // instance, so this is the difference between 7 animations running
+  // whenever the hero is merely mounted vs. only while actually on screen.
+  // .play()/.pause() (not toggling the `autoplay` prop) is what keeps this
+  // resuming from wherever the animation left off rather than restarting at
+  // frame 0 — lottie-react's own `autoplay` prop is only read once, at
+  // construction, and doesn't re-fire subsequent play/pause on its own.
+  const { ref: viewportRef, isInView } = useV1InViewport<HTMLDivElement>();
+
+  useEffect(() => {
+    if (isInView) {
+      lottieRef.current?.play();
+    } else {
+      lottieRef.current?.pause();
+    }
+  }, [isInView]);
+
   return (
     <motion.div
+      ref={viewportRef}
       // scale-75 below sm: (640px) — butterfly PX size is fixed (bf.size,
       // via inline style, set by the data array above), so on a narrow
       // phone the same pixel footprint covers proportionally more of the
@@ -682,34 +705,44 @@ export default function SunsetHero({ people, groupTitle, title }: SunsetHeroProp
         }}
       />
 
-      <div className="relative z-10">
+      {/* Heading/subtitle/divider now reveal via the shared V1 scroll-reveal
+          system (lib/v1ScrollReveal.ts) instead of three independently
+          hand-tuned initial/animate/transition triples — staggerContainerVariant
+          on this wrapper cascades fadeUpVariant down to each child in
+          sequence (staggerChildren/delayChildren, not per-child delay
+          values). whileInView still fires effectively immediately here
+          since this block is above the fold, but using the same
+          initial="hidden" whileInView="visible" viewport={viewportOnce}
+          pattern as every other V1 section keeps the mechanism consistent
+          even though this one doesn't need to wait for real scrolling. */}
+      <motion.div
+        className="relative z-10"
+        initial="hidden"
+        whileInView="visible"
+        viewport={viewportOnce}
+        variants={staggerContainerVariant}
+      >
         <motion.h1
-          initial={{ opacity: 0, y: 28 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
+          variants={fadeUpVariant}
           className="font-display text-5xl font-normal text-[#4a2f26] sm:text-6xl md:text-7xl"
         >
           {heading}
         </motion.h1>
 
         <motion.p
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, ease: "easeOut", delay: 0.5 }}
+          variants={fadeUpVariant}
           className="font-display mt-6 max-w-xl text-xl italic text-[#4a2f26]/75 sm:text-2xl"
         >
           {title}
         </motion.p>
 
         <motion.div
+          variants={fadeUpVariant}
           className="mx-auto mt-8 flex justify-center"
-          initial={{ opacity: 0, scaleX: 0 }}
-          animate={{ opacity: 1, scaleX: 1 }}
-          transition={{ duration: 0.8, ease: "easeOut", delay: 0.9 }}
         >
           <div className="h-px w-24 bg-gradient-to-r from-transparent via-[#c9a68a] to-transparent" />
         </motion.div>
-      </div>
+      </motion.div>
     </section>
   );
 }
