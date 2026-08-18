@@ -2,6 +2,8 @@
 
 import { Eye } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { CSSProperties, KeyboardEvent, MouseEvent } from "react";
 
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -22,24 +24,6 @@ interface CardAccent {
   badgeBorder: string;
 }
 
-// Per-template palette hints, keyed by componentKey — a quiet nod to each
-// template's own color identity (see components/templates/AnniversaryV1.tsx
-// and AnniversaryV2.tsx's own design-system comments for the source colors)
-// rather than a full re-theme of the card, which stays on the homepage's
-// dark/indigo base. Anything not listed here (future non-V1/V2 templates)
-// falls back to DEFAULT_ACCENT — a neutral treatment matching the card's
-// prior plain white/indigo look, so new templates don't need an entry here
-// to render correctly.
-//
-// Values are all rgba()/hex strings, not Tailwind color tokens — colors
-// differ per template at runtime (based on which template this card is),
-// so they're threaded through as CSS custom properties (--accent-*, set via
-// the `style` prop below) and referenced from arbitrary-value Tailwind
-// classes as `var(--accent-*)`. Tailwind's arbitrary-value classes are
-// static source text either way (only the custom property's resolved value
-// changes at runtime), so this is the one clean way to do per-instance
-// runtime colors without hardcoding every template's palette into the
-// Tailwind build.
 const CARD_ACCENTS: Record<string, CardAccent> = {
   // Anniversary V1 — warm peach/terracotta, the template's own primary
   // accent (#d97a5f, "V1 Golden Hour/Sunset" design system).
@@ -75,6 +59,7 @@ interface TemplateCardProps {
 
 export default function TemplateCard({ template, fallbackImage }: TemplateCardProps) {
   const { t } = useLanguage();
+  const router = useRouter();
   const demoUrl = `/preview/${template.componentKey}`;
   const accent = CARD_ACCENTS[template.componentKey] ?? DEFAULT_ACCENT;
 
@@ -86,7 +71,7 @@ export default function TemplateCard({ template, fallbackImage }: TemplateCardPr
   } as CSSProperties;
 
   const openDemo = () => {
-    window.open(demoUrl, "_blank", "noopener,noreferrer");
+    router.push(demoUrl);
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -129,16 +114,14 @@ export default function TemplateCard({ template, fallbackImage }: TemplateCardPr
         </span>
       </div>
       <div className="p-4">
-        <a
+        <Link
           href={demoUrl}
-          target="_blank"
-          rel="noopener noreferrer"
           onClick={handlePreviewClick}
           className="relative z-10 inline-flex items-center gap-1 text-[11px] font-medium text-[#a1a1aa] transition-colors hover:text-[#f4f4f5]"
         >
           <Eye size={12} aria-hidden="true" />
           {t.showcase.previewLabel}
-        </a>
+        </Link>
         <h3 className="mt-1.5 text-sm font-semibold text-[#f4f4f5]">{template.name}</h3>
         <button
           type="button"

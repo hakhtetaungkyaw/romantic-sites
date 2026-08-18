@@ -8,6 +8,7 @@ import Signature from "@/components/shared/closing/Signature";
 import GlassCards from "@/components/shared/countdown/GlassCards";
 import Magazine from "@/components/shared/gallery/Magazine";
 import CinematicVideo from "@/components/shared/hero/CinematicVideo";
+import ConstellationGame from "@/components/shared/interactive/ConstellationGame";
 import LoveNote from "@/components/shared/interactive/LoveNote";
 import ScrollProgressIndicator from "@/components/shared/interactive/ScrollProgressIndicator";
 import SongPlayer, {
@@ -18,6 +19,7 @@ import LetterCard from "@/components/shared/message/LetterCard";
 import TypedPhrases from "@/components/shared/message/TypedPhrases";
 import PlacesWeveBeen from "@/components/shared/places/PlacesWeveBeen";
 import VerticalLine from "@/components/shared/timeline/VerticalLine";
+import { scaleBlurVariant, viewportRepeat } from "@/lib/v2ScrollReveal";
 import type { SiteData } from "@/types/site";
 
 interface AnniversaryV2Props {
@@ -95,13 +97,34 @@ export default function AnniversaryV2({ data }: AnniversaryV2Props) {
 
             <LetterCard message={message} />
 
-            <NightSky specialDate={specialDate} />
+            <NightSky
+              specialDate={specialDate}
+              // Distinct from CinematicVideo's photos[0] (hero poster) and
+              // ConstellationGame's photos[photos.length-1] (its reveal
+              // photo) below — only genuinely available once there are 3+
+              // photos, per ShootingStarWish.tsx's own usage note.
+              wishPhotoUrl={photos.length > 2 ? photos[1]?.src : undefined}
+            />
 
             <Magazine photos={photos} />
 
             <VerticalLine milestones={milestones} />
 
             <PlacesWeveBeen places={places} />
+
+            <section className="px-6 py-[120px]">
+              <motion.div
+                initial="hidden"
+                whileInView="visible"
+                viewport={viewportRepeat}
+                variants={scaleBlurVariant}
+              >
+                <ConstellationGame
+                  revealMessage={secretNote}
+                  photoUrl={photos[photos.length - 1]?.src}
+                />
+              </motion.div>
+            </section>
 
             <Signature
               people={people}

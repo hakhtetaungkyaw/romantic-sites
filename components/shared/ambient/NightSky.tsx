@@ -3,10 +3,13 @@
 import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
+import ShootingStarWish from "@/components/shared/interactive/ShootingStarWish";
 import { fadeUpVariant, viewportRepeat } from "@/lib/v2ScrollReveal";
 
 interface NightSkySectionProps {
   specialDate: string;
+  /** Optional Cloudinary-hosted photo shown in ShootingStarWish's reveal card. */
+  wishPhotoUrl?: string;
 }
 
 interface Star {
@@ -398,7 +401,7 @@ function StarDot({ star }: { star: Star }) {
   );
 }
 
-export default function NightSkySection({ specialDate }: NightSkySectionProps) {
+export default function NightSkySection({ specialDate, wishPhotoUrl }: NightSkySectionProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -514,6 +517,15 @@ export default function NightSkySection({ specialDate }: NightSkySectionProps) {
           {formatSpecialDate(specialDate)}
         </motion.p>
       </div>
+
+      {/* Rendered last (after the z-10 caption/heart/date content above) so
+          its own RevealCard — which shares that same z-10 — wins the
+          stacking tie via DOM order and correctly covers this whole section
+          when a wish is caught, rather than sitting underneath it. This
+          section's own ShootingStars above is purely decorative/frequent
+          (2.5-4.5s); ShootingStarWish is the separate, much rarer (15-25s)
+          catchable one — distinct components, coexisting on purpose. */}
+      <ShootingStarWish photoUrl={wishPhotoUrl} />
     </section>
   );
 }

@@ -98,7 +98,7 @@ const my: HomepageDictionary = {
     emptyGeneric: "ပုံစံအသစ်များ မကြာမီရောက်ရှိလာမည်ဖြစ်ပါသဖြင့် ခဏနေမှ ပြန်လာကြည့်ပါ။",
     orderThisStyle: "ဒီပုံစံမှာယူရန်",
     previewLabel: "နမူနာကြည့်ရန်",
-    viewDemoAria: (templateName) => `${templateName} ၏ နမူနာကြည့်ရန် (တဲဘ်အသစ်ဖြင့်ဖွင့်မည်)`,
+    viewDemoAria: (templateName) => `${templateName} ၏ နမူနာကြည့်ရန်`,
   },
   howItWorks: {
     heading: "လုပ်ဆောင်ပုံ",
@@ -206,7 +206,7 @@ const en: HomepageDictionary = {
     emptyGeneric: "New templates are on the way — check back soon.",
     orderThisStyle: "Order This Style",
     previewLabel: "Preview",
-    viewDemoAria: (templateName) => `View demo of ${templateName} (opens in a new tab)`,
+    viewDemoAria: (templateName) => `View demo of ${templateName}`,
   },
   howItWorks: {
     heading: "How it works",

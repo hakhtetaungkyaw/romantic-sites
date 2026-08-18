@@ -5,6 +5,7 @@ import SunflowerCountdown from "@/components/shared/countdown/SunflowerCountdown
 import SunlitPolaroids from "@/components/shared/gallery/SunlitPolaroids";
 import GiftBoxUnlock from "@/components/shared/hero/GiftBoxUnlock";
 import SunsetHero from "@/components/shared/hero/SunsetHero";
+import PetalOracle from "@/components/shared/interactive/PetalOracle";
 import SealedLetter from "@/components/shared/message/SealedLetter";
 import SunsetTimeline from "@/components/shared/timeline/SunsetTimeline";
 import { V1_BACKGROUND_GRADIENT } from "@/lib/v1SectionGradients";
@@ -36,7 +37,7 @@ interface AnniversaryV1Props {
 // the gallery lightbox, the timeline's own scroll-progress line) are
 // unrelated to this and render on top of it exactly as before.
 export default function AnniversaryV1({ data }: AnniversaryV1Props) {
-  const { people, groupTitle, title, message, specialDate, photos, closingLine, milestones, songs } = data;
+  const { people, groupTitle, title, message, specialDate, photos, closingLine, milestones, songs, secretNote } = data;
   const song = songs?.[0];
 
   return (
@@ -56,6 +57,8 @@ export default function AnniversaryV1({ data }: AnniversaryV1Props) {
           <SunsetTimeline milestones={milestones} />
 
           <SunflowerCountdown specialDate={specialDate} />
+
+          <PetalOracle revealMessage={secretNote} />
 
           <SunsetSignature people={people} groupTitle={groupTitle} closingLine={closingLine} />
         </GiftBoxUnlock>
