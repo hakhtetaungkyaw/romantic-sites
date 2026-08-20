@@ -51,3 +51,41 @@ export interface SiteData {
    */
   customData?: Record<string, unknown>;
 }
+
+/**
+ * Birthday templates' (BirthdayV1 "Celebration Room" onward) shape for
+ * `SiteData.customData.birthday` — intentionally NOT a change to
+ * `customData`'s own `Record<string, unknown>` type (that stays generic and
+ * backward-compatible for every template family); this is just the shape a
+ * Birthday template should expect to find AT that key, and cast to when
+ * reading it.
+ *
+ * Most of what a Birthday site needs is already covered by SiteData's
+ * existing generic fields, reused rather than duplicated here:
+ *   - `people[0].name`  -> the birthday person's name (people has a minimum
+ *                          of 1 entry; Birthday only ever uses the first)
+ *   - `specialDate`     -> the birthdate
+ *   - `title`           -> the Celebration Room's own heading
+ *   - `message`         -> the grand-finale main message
+ *   - `photos[]`        -> the Memory Frame gallery's photos
+ *   - `songs[0]`        -> interactive/BirthdaySongPlayer.tsx's track, same
+ *                          `songs?.[0]` sourcing templates/AnniversaryV2.tsx
+ *                          already uses for its own SongPlayer
+ * `customData.birthday` holds only what's genuinely new and has no existing
+ * SiteData field to reuse.
+ */
+export interface BirthdayCustomData {
+  age?: number;
+  cakeWishMessage: string;
+  balloonMessages: string[];
+  /** Shown in the reveal card once every balloon in balloonMessages has been popped — deliberately separate from SiteData.message, which is reserved for the Grand Finale's own payoff later in the template. */
+  balloonCompletionMessage: string;
+  /** Shown inline in interactive/GiftUnwrap.tsx after its second unwrap layer (the wrapping paper) comes off — the middle beat of its 3-layer sequence, before the final reveal modal. */
+  giftLayerTwoPhrase: string;
+  /** The 7 short labels shown on interactive/GiftUnwrap.tsx's spin wheel (layer 3, after the box opens) — one segment each. Kept short since each has to fit inside a wheel segment. */
+  giftWheelItems: string[];
+  /** Shown in interactive/GiftUnwrap.tsx's final reveal modal once the wheel lands — its own field so it doesn't duplicate SiteData.message (Grand Finale) or balloonCompletionMessage (BalloonReveal's own completion). Now supporting text alongside the landed wheel item, not the modal's sole content. */
+  giftMessage: string;
+  /** interactive/GiftUnwrap.tsx's own photo slot — deliberately separate from SiteData.photos[], so it never collides with an index another Birthday object already reuses. */
+  giftPhoto?: string;
+}

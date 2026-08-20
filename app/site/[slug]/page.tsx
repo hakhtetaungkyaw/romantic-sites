@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import AnniversaryV1 from "@/components/templates/AnniversaryV1";
 import AnniversaryV2 from "@/components/templates/AnniversaryV2";
+import BirthdayV1 from "@/components/templates/BirthdayV1";
 import { prisma, withRetry } from "@/lib/db";
 import { orderToSiteData } from "@/lib/orderMapper";
 import type { SiteData } from "@/types/site";
@@ -13,6 +14,7 @@ const TEMPLATE_COMPONENTS: Record<
 > = {
   "anniversary-v1": AnniversaryV1,
   "anniversary-v2": AnniversaryV2,
+  "birthday-v1": BirthdayV1,
 };
 
 export const metadata: Metadata = {

@@ -1,4 +1,4 @@
-import type { SitePhoto, SiteData } from "@/types/site";
+import type { BirthdayCustomData, SitePhoto, SiteData } from "@/types/site";
 
 // All 15 demo photos, each with a caption specific to what's actually in that image.
 const galleryPhotos: SitePhoto[] = [
@@ -138,4 +138,62 @@ export const dummySiteData: SiteData = {
     "Here's to every tomorrow with you.",
     "You are, quite simply, my favorite person.",
   ],
+};
+
+// Reuses the same public/demo-assets/photos/couple-NN.jpg files
+// dummySiteData's own gallery draws from — no dedicated Birthday demo
+// photos exist yet, and creating them is out of scope for scaffolding.
+// Captions below are written for a birthday Memory Frame gallery
+// regardless of what the underlying photo actually shows; swap in real
+// birthday-appropriate images before this ever ships as an actual demo.
+const birthdayMemoryPhotos: SitePhoto[] = [
+  { src: "/demo-assets/photos/couple-03.jpg", caption: "The candles almost didn't survive that gust of wind." },
+  { src: "/demo-assets/photos/couple-06.jpg", caption: "Best surprise party face, no contest." },
+  { src: "/demo-assets/photos/couple-10.jpg", caption: "Confetti in the hair for a week straight." },
+  { src: "/demo-assets/photos/couple-13.jpg", caption: "That look right before the first bite of cake." },
+  { src: "/demo-assets/photos/couple-14.jpg", caption: "Every single friend who showed up that night." },
+  { src: "/demo-assets/photos/couple-15.jpg", caption: "The balloon that got away — RIP." },
+];
+
+const birthdayCustomData: BirthdayCustomData = {
+  age: 25,
+  cakeWishMessage:
+    "Blow out the candles and make it count — this year's already off to a wonderful start.",
+  balloonMessages: [
+    "You make every room brighter just by walking in.",
+    "Here's to another year of your terrible jokes and great hugs.",
+    "25 looks incredible on you.",
+    "Never change how loudly you laugh at your own jokes.",
+    "The world got lucky the day you were born.",
+    "May this year bring you everything you didn't even know to ask for.",
+    "Still the most fun person in every group chat.",
+  ],
+  balloonCompletionMessage:
+    "Every single one of those is true, by the way — and there are a hundred more where they came from.",
+  giftLayerTwoPhrase: "Getting warmer...",
+  giftWheelItems: [
+    "A trip together",
+    "Something you've wanted",
+    "A handwritten letter",
+    "Breakfast in bed",
+    "A whole lazy day",
+    "Money",
+    "A surprise date night",
+  ],
+  giftMessage:
+    "This isn't much, but it comes with everything I have — thank you for another year of you.",
+  giftPhoto: "/demo-assets/photos/couple-16.jpg",
+};
+
+export const dummyBirthdayData: SiteData = {
+  people: [{ name: "Maya" }],
+  title: "Maya's Celebration Room",
+  message:
+    "Twenty-five years of you, and every single one has been worth celebrating. Here's to the person who turns ordinary Tuesdays into main character energy, who remembers everyone's coffee order, and who somehow makes getting older look like the best plan anyone's ever had. Happy birthday — this room, and everyone in it, adores you.",
+  specialDate: "2001-03-14T00:00:00.000Z",
+  photos: birthdayMemoryPhotos,
+  songs: [{ title: "Happy Birthday", url: "/audio/birthdaysong.mp3" }],
+  customData: {
+    birthday: birthdayCustomData,
+  },
 };

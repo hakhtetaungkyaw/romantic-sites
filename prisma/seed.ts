@@ -15,6 +15,16 @@ const templates = [
     componentKey: "anniversary-v2",
     price: 65000,
   },
+  {
+    name: "Birthday V1",
+    category: "birthday",
+    componentKey: "birthday-v1",
+    previewImage: "/template-preview/bdy-v1.png",
+    // Placeholder — TemplateCard.tsx doesn't render price anywhere, this
+    // only exists to satisfy the required Int column until real pricing
+    // is decided.
+    price: 0,
+  },
 ];
 
 async function main() {

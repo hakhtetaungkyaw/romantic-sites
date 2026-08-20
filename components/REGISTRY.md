@@ -1,9 +1,14 @@
 # Component Registry
 
-Every component in `components/shared/`, organized by its category subfolder, plus
-both templates in `components/templates/`. Update this file whenever a shared
-component is added, removed, moved, or repurposed — see `PROJECT_CONTEXT.md`
-section 4.
+Every component in `components/shared/` (Anniversary) and `components/birthdayShared/`
+(Birthday), organized by category subfolder, plus every template in
+`components/templates/`. Update this file whenever a shared component is added,
+removed, moved, or repurposed — see `PROJECT_CONTEXT.md` section 4.
+
+`components/shared/` and `components/birthdayShared/` are two entirely separate
+trees — neither ever imports from the other, the same file-isolation principle
+Anniversary V1 and V2 already hold between each other, just drawn one level
+higher (by product line, not just by template version within one line).
 
 `SitePhoto` (`{ src: string; caption?: string }`, defined in `types/site.ts`) is the
 shape of every entry in `SiteData.photos` — both gallery photo components take
@@ -37,6 +42,52 @@ unaware of the array shape.
   burgundy/champagne-gold palette, self-hosted Playfair Display
   (`font-display`), video hero + moment video, scroll-driven background
   gradient, click-to-enter unlock gate.
+- `templates/BirthdayV1.tsx` — "Celebration Room," the first template in the
+  new Birthday product line, restructured from a vertical scroll-stack into
+  hub-and-spoke navigation. Composes components from
+  `components/birthdayShared/` only (see that section below) — never
+  `components/shared/`. `hero/BirthdayGate` wraps everything (the
+  candle-blow/wish moment — this is also where the "cake" wish moment
+  lives; the decorate-your-own-cake object, `interactive/CakeCustomizer`,
+  is a separate, unrelated discoverable object reached from the hub).
+  `interactive/BirthdaySongPlayer` mounts as a sibling BEFORE the gate
+  (outside its gated children) so its `<audio>` element already exists when
+  the gate's own `onOpen` fires the player's exposed `play()` synchronously
+  within the candle-blow tap. Inside the gate, one `h-dvh` `main` holds a
+  7-way `activeView` state machine
+  (`"hub" | "balloons" | "gift" | "photos" | "cake" | "wishes" | "finale"`),
+  swapped via a single `AnimatePresence mode="wait"` between full-screen
+  (`absolute inset-0`, own `overflow-y-auto` + `hide-scrollbar`) panels:
+  `"hub"` shows `interactive/CelebrationHub` (5 tiles) plus
+  `interactive/RoomProgress` as a complementary aggregate readout beneath
+  it; `"balloons"`/`"gift"`/`"cake"`/`"wishes"` show
+  `interactive/BalloonReveal`/`interactive/GiftUnwrap`/
+  `interactive/CakeCustomizer`/`interactive/WishLetter` full-screen with
+  their own `onBack`-driven Back button returning to the hub; `"photos"`
+  shows `interactive/MemoryFrames` with `autoOpen` (skips its idle stack,
+  jumps straight into the gallery) whose existing "Close gallery" button is
+  repurposed via `onBack` to return to the hub instead of just closing in
+  place; `"finale"` shows `closing/GrandFinale` (reached only via the hub's
+  own CTA tile once all 5 objects are discovered, never automatically) with
+  a template-level `FinaleBackButton` overlay, since `GrandFinale.tsx`
+  itself stays unmodified. Most objects' own per-object progress is lifted
+  to this template (`poppedBalloons: number[]`, `giftLandedItem: string`,
+  `galleryDiscovered: boolean`, `cakeFrosting: FrostingId | null`,
+  `cakeToppings: ToppingId[]`, `cakeDiscovered: boolean`,
+  `wishesDiscovered: boolean`) so it survives the real unmount/remount a hub
+  round-trip causes, seeded back down via each object's own
+  `initialPopped`/`initialLandedItem`/`autoOpen`/`initialFrosting`+
+  `initialToppings` props and kept in sync via
+  `onPoppedChange`/`onWheelSpin`/`onGalleryOpen`/`onSelectionChange` —
+  `interactive/WishLetter` is the one exception, with nothing to seed back
+  (each wish is written and released, never kept), so only its one-shot
+  `onWishSent` discovered signal is lifted. This template still owns no
+  per-object interaction logic of its own, it only listens and re-seeds.
+  Data plumbing:
+  `people[0].name`/`title`/`message`/`photos`/`songs[0]` from `SiteData`
+  directly, Birthday-specific extras from `SiteData.customData.birthday`
+  (shaped by the `BirthdayCustomData` interface in `types/site.ts`) —
+  props: `data: SiteData`
 
 ## hero/
 
@@ -286,3 +337,255 @@ Site-wide fixed UI utilities the visitor acts on — distinct from `ambient/`
   pixel — used in: V1 (new "Golden Hour" redesign, not yet wired into
   `AnniversaryV1.tsx`) — props: `people: SitePerson[]`, `groupTitle?: string`,
   `closingLine?: string`
+
+## birthdayShared/hero/
+
+Birthday product line's own component tree — a sibling to `components/shared/`
+(Anniversary's tree), not a subfolder of it, and never imports from it.
+
+- `BirthdayGate.tsx` — BirthdayV1 "Celebration Room"'s opening gate, the same
+  "wrap children, gate them behind an `opened` flag, lock body scroll until
+  then" mechanism as `hero/GiftBoxUnlock.tsx` (Anniversary V1) /
+  `interactive/UnlockGate.tsx` (Anniversary V2), reimplemented fully
+  locally. Supersedes an earlier `interactive/CakeWish.tsx` entirely — that
+  file (a tap-to-blow-candles object with its own reveal card) has been
+  deleted; the cake concept now lives here instead, as the gate's own
+  centerpiece, with no reveal card/message/photo of its own. Sequence: an
+  automatic "Happy Birthday[, name]!" greeting, then a two-tier cake (piped
+  wavy frosting, confetti sprinkles, a stand, layered-glow candle flames
+  scaled to `age`, capped at 12) drops in tier-by-tier then candle-by-candle
+  (spring physics), lights up, prompts "Tap to make a wish," and on tap
+  extinguishes staggered (smoke puffs, soft vignette dim) before
+  cross-fading out. No `fixed`+`createPortal` needed (unlike
+  `interactive/RevealCard.tsx`/the deleted `CakeWish.tsx`'s own reveal
+  card) — this component IS the outermost wrapper, the same role
+  `GiftBoxUnlock.tsx`/`UnlockGate.tsx` already play, so there's no smaller
+  ancestor for its own `fixed inset-0` to escape — used in: Birthday V1
+  (wraps the entire template in `templates/BirthdayV1.tsx`) — props:
+  `children: React.ReactNode`, `onOpen?: () => void`, `age?: number`,
+  `personName?: string`
+
+## birthdayShared/interactive/
+
+The Celebration Room's navigation hub, its 5 discoverable objects, and the
+progress indicator tracking them. Each object exposes its own "discovered"
+completion callback (see each entry below) so `templates/BirthdayV1.tsx`
+can drive `CelebrationHub`, `RoomProgress`, and `closing/GrandFinale`
+without owning any per-object completion logic itself. Since
+`templates/BirthdayV1.tsx`'s hub-and-spoke restructure, each of the 5
+objects also genuinely unmounts/remounts on hub navigation (rather than
+just hiding/showing in place), so most accept an optional seed prop
+(`initialPopped`/`initialLandedItem`/`autoOpen`/`initialFrosting`+`initialToppings`)
+to restore progress on remount and an optional change callback to report it
+back up (`interactive/WishLetter` is the one exception — it has no progress
+to seed, by design), plus every object accepts an optional `onBack` to
+leave it and return to the hub — every object's own former "reset
+everything on close" behavior has been removed (a hub round-trip must not
+wipe progress; only a real page reload resets state now), while each
+object's own separate "dismiss a single piece of content" close logic (a
+per-balloon message panel, the wheel's landed-item modal) is unaffected.
+
+- `CelebrationHub.tsx` — the room's own directory screen: a primary heading
+  ("Happy Birthday, {personName}!," same emotional weight as
+  `hero/BirthdayGate.tsx`'s own candle-blow greeting and
+  `closing/GrandFinale.tsx`'s own heading) with `title` ("[Name]'s
+  Celebration Room") demoted to a small eyebrow label above it, then 5
+  tappable tiles (Balloons/Gift/Photos/Cake/Wishes) scattered at asymmetric,
+  depth-scaled positions (`TILE_PLACEMENTS`) rather than a uniform grid —
+  reads as objects placed around a small room. Each tile is a hand-drawn
+  SVG icon (deliberately not emoji, to stay consistent with every other
+  Birthday object's premium illustrated style) with its own small looping
+  micro-animation (balloons bob/sway independently, the gift box gets an
+  occasional shake + twinkling sparkle glints, the photo stack periodically
+  fans and settles, the cake's candle flickers, the wishes tile's comet
+  trail streaks and rests) + label + a discovered/partial-progress caption
+  (e.g. "3 of 7 popped"), with a gold checkmark badge once that object is
+  fully discovered. A floating 3-lantern cluster (`HeroCenterpiece`, varied
+  size/opacity/speed for depth) plus scattered ambient confetti/sparkle
+  glints sit behind everything as this screen's own atmosphere — a
+  floating-lantern motif rather than a birthday-cake one, chosen
+  specifically because `hero/BirthdayGate.tsx` already spends the cake
+  motif on the candle-blow moment just before this screen. A dot-pattern
+  background and 2-row bunting garland (both ported from
+  `interactive/MemoryFrames.tsx`'s own party-atmosphere recipe,
+  reimplemented locally) complete it. Once all 5 objects are discovered, a
+  CTA button fades in ("See the Grand Finale") — proceeding is always a
+  deliberate tap, never automatic, so the user can freely revisit any
+  object first. Renders no modal/portal itself; `templates/BirthdayV1.tsx`
+  wraps whichever view is active (this hub included) in one shared
+  full-screen panel — used in: Birthday V1 — props: `title: string`,
+  `personName?: string`, `balloonsPopped: number`, `balloonsTotal: number`,
+  `balloonsDiscovered: boolean`, `giftDiscovered: boolean`,
+  `galleryDiscovered: boolean`, `cakeDiscovered: boolean`,
+  `wishesDiscovered: boolean`, `onSelectBalloons: () => void`,
+  `onSelectGift: () => void`, `onSelectPhotos: () => void`,
+  `onSelectCake: () => void`, `onSelectWishes: () => void`,
+  `onProceedToFinale: () => void`
+- `BalloonReveal.tsx` — a tap-to-pop balloon bouquet (up to 7, one per
+  `customData.birthday.balloonMessages` entry), warm-palette gradient
+  balloons on hand-placed slots with independent idle float/sway, tap pops
+  one (scatter-burst + squash exit) and reveals that balloon's own message
+  in a shared, lighter-weight inline panel below the bouquet (not a modal —
+  7 stacked full-screen takeovers would be excessive for what's a quick
+  read each). Once every balloon is popped, a proper
+  `fixed`+`createPortal(document.body)` modal opens (same shape as
+  `interactive/PetalOracle.tsx`'s own reveal, since this IS a single
+  one-time payoff) showing `balloonCompletionMessage` + `photos[0]`;
+  closing it no longer resets anything (popped balloons stay popped) — used
+  in: Birthday V1 — props: `messages: string[]`, `completionMessage:
+  string`, `photoUrl?: string`, `onAllPopped?: () => void` (fires the
+  moment the final balloon is popped, not gated on the completion modal's
+  own display/hold timing), `initialPopped?: number[]` (seeds `popped` on
+  mount), `onPoppedChange?: (popped: number[]) => void` (fires the full
+  current set after every pop), `onBack?: () => void` (shows a dedicated
+  fixed top-left Back button when provided)
+- `GiftUnwrap.tsx` — a gift box unwrapped across 3 layers (ribbon -> paper
+  -> lid), each removal its own distinct animation (falling/spinning
+  ribbon+bow, peeling paper, lifting lid + sparkle burst), with layers 1-2
+  revealing a small inline icon/word and a short phrase
+  (`giftLayerTwoPhrase`) respectively. Layer 3 doesn't go straight to a
+  reveal — it opens a spin wheel (7 segments from
+  `customData.birthday.giftWheelItems`, realistic decelerating spin
+  physics, gold pointer/hub) that only THEN opens the final
+  `fixed`+`createPortal` modal, leading with the landed item ("You get:
+  {item}! 🎉") and `giftMessage` as supporting text. Closing no longer
+  resets the sequence — once landed, layer 3 instead shows a compact
+  "You got: {item}! — View your gift again" summary rather than replaying
+  the unwrap+spin — used in: Birthday V1 — props: `giftMessage: string`,
+  `giftLayerTwoPhrase: string`, `giftWheelItems: string[]`,
+  `onWheelSpin?: (landedItem: string) => void` (fires once the wheel
+  lands, not on the tap itself, now with the landed label),
+  `initialLandedItem?: string` (seeds `layer`/`landedItem` on mount,
+  skipping straight to the claimed summary), `onBack?: () => void` (shows a
+  dedicated fixed top-left Back button when provided)
+- `MemoryFrames.tsx` — meaningfully different shape from the other
+  objects (a browsable gallery, not a one-time tap-and-reveal): idle state
+  is a small fanned polaroid stack (first 2-3 photos); tapping opens a
+  `fixed`+`createPortal` gallery showing every entry in `SiteData.photos`
+  one at a time (large single polaroid, caption in its own bottom border),
+  navigable via real prev/next buttons, arrow keys, or touch/mouse
+  drag-swipe (Framer Motion `drag="x"` on a wrapper kept separate from the
+  slide-transition content, so the two animation systems don't fight),
+  with a "MEMORY 0X" counter + dot row + a party-themed atmosphere (2-row
+  bunting garland, ambient background balloons, scattered-dot backdrop
+  texture, confetti near the card, candle icons flanking the bottom
+  counter). Backdrop-tap-to-dismiss (matching every other Birthday modal)
+  plus the close button both work; reopening always starts fresh at photo
+  1 via a remount-on-open key, since browsing has nothing to "reset" — used
+  in: Birthday V1 — props: `photos: SitePhoto[]`, `onGalleryOpen?: () =>
+  void` (fires on first open), `autoOpen?: boolean` (skips the idle stack,
+  opens the gallery immediately on mount), `onBack?: () => void`
+  (repurposes the existing "Close gallery" button/backdrop-tap to call
+  this instead of just closing in place — no second Back button is added,
+  unlike `BalloonReveal`/`GiftUnwrap`, since this component already has one
+  natural close affordance to reuse)
+- `CakeCustomizer.tsx` — decorate-your-own-cake object #4: a full 2-tier
+  cake at the same depth/quality bar as `hero/BirthdayGate.tsx`'s own
+  (gradient tiers, wavy piped frosting bands, cake stand, soft shadow),
+  reimplemented locally, plus 3 individually tappable candles reusing that
+  same file's layered-glow/flicker/extinguish-puff technique (all start
+  unlit — lighting one is a deliberate tap, not a default). 7 frosting
+  flavors (Chocolate/Vanilla/Strawberry/Lemon/Caramel/Mint/Blueberry — Mint
+  and Blueberry recolored to a warm sage-cream and dusty rose-mauve rather
+  than literal green/blue) and 7 multi-select toppings (Strawberries/
+  Sprinkles/Chocolate Chips/Gold Pearls/Blueberries/Mint Leaves/Cherries),
+  every option individually labeled beneath its swatch/icon. Selecting a
+  frosting swaps the cake's color instantly and plays a decorative one-shot
+  "pour" blob in the same color so the two read as one continuous moment;
+  toppings drop in with a spring bounce at fixed hand-placed positions and
+  fade out on deselect. No colored backdrop panel behind the cake (two
+  earlier passes tried one, both reverted) — the candle glow was
+  strengthened instead (two-layer bloom: a wide soft outer glow + a
+  brighter tight inner halo) so it reads as clearly lit against the same
+  plain cream background everything else sits on. "Save to Your Photos"
+  clones the live `<svg>` (deterministically settling any mid-flicker lit
+  candle to a clean "on" state first — Framer Motion's own SVG opacity
+  attribute can otherwise read stale at the instant of serialization),
+  serializes it, draws it onto an offscreen canvas at 2x scale, and
+  triggers a real browser download (`<a download>`) of a PNG — purely
+  client-side, no API route/server action/persistence — while
+  simultaneously playing a full-screen one-shot `confetti.json` burst
+  (same asset/pattern as `closing/GrandFinale.tsx` and
+  `hero/BirthdayGate.tsx`, fading itself back out afterward via
+  `AnimatePresence` rather than hiding behind a screen transition) and
+  showing a brief fading "Saved to your photos" confirmation.
+  `onCakeCustomized` fires once, on mount — same "opening the object at all
+  is the signal" shape `MemoryFrames.tsx`'s own `onGalleryOpen` uses, not
+  tied to Save — used in: Birthday V1 — props:
+  `initialFrosting?: FrostingId | null`, `initialToppings?: ToppingId[]`,
+  `onSelectionChange?: (frosting: FrostingId | null, toppings: ToppingId[]) => void`,
+  `onCakeCustomized?: () => void`, `onBack?: () => void`
+- `WishLetter.tsx` — object #5, this room's own bookend to
+  `hero/BirthdayGate.tsx`'s silent candle-blow wish: a warm dusk-toned
+  scene (deep warm brown fading to amber near the horizon — the one object
+  in this room with a genuinely dark scene rather than the light cream
+  every sibling sits on) with a from-scratch seeded ambient starfield
+  (`mulberry32`, reimplemented locally — no comparable ambient starfield
+  existed anywhere in Birthday V1 to reuse), across which a shooting star
+  periodically transits. Adapts the catch mechanic from Anniversary V2's
+  `interactive/ShootingStarWish.tsx` (same timing constants, generous
+  hit-area padding well past the visible streak, pulsing "tap me" ring,
+  slower transit for real tap-ability) into a fresh, non-shared
+  implementation recolored to warm gold rather than that file's own
+  rose-gold — reimplemented, not imported, per this project's product-line
+  isolation principle; misses have no penalty and fade out, the next star
+  already scheduled. Catching one opens a local `fixed`+`createPortal`
+  letter-writing card (own implementation, styled per the warm-paper visual
+  language of Anniversary V1's `message/SealedLetter.tsx` but not copied
+  from it) prompting "What's your wish?" with a real `<textarea>` and a
+  Send button; sending folds/fades the card upward and off-screen into a
+  brief "Sent to the stars" confirmation (a hand-drawn sparkle icon, no
+  emoji) before returning to the starfield. By design the wish text is
+  never sent to any API, never stored anywhere, and is discarded from local
+  state the instant Send is tapped — genuinely ephemeral, unlike every
+  other object's keepsake-shaped payoff. `onWishSent` fires once, the first
+  time a wish is successfully sent (not on open, since — unlike
+  `MemoryFrames`/`CakeCustomizer` — this object has a genuine idle starfield
+  state to sit in before that happens) — used in: Birthday V1 — props:
+  `onWishSent?: () => void`, `onBack?: () => void`
+- `RoomProgress.tsx` — small, quiet status readout (a "X of Y discovered"
+  label + a dot row, same filled/unfilled terracotta-glow dot styling
+  every other Birthday progress row in this section uses) — genuinely
+  stateless, just renders whatever counts it's given; owns no
+  discovery-tracking logic of its own — used in: Birthday V1 — props:
+  `discoveredCount: number`, `total: number`
+- `BirthdaySongPlayer.tsx` — small fixed bottom-right glass-morphism pill
+  (warm cream/rose-gold, not Anniversary V2's dark-gold-on-burgundy), same
+  imperative-`play()`-via-ref autoplay pattern `interactive/SongPlayer.tsx`
+  (V2) + `interactive/UnlockGate.tsx` use: mounted as a sibling BEFORE
+  `hero/BirthdayGate.tsx` in `templates/BirthdayV1.tsx` (outside its gated
+  children) so its `<audio>` element already exists when the gate's own
+  `onOpen` fires the exposed `play()` synchronously within the same
+  candle-blow tap, satisfying browser autoplay policy. Toggle button is a
+  real 44x44px tap target (V2's own equivalent is 36px); hand-drawn local
+  play/pause/note icons rather than an icon-package import, matching every
+  other Birthday file's own convention. Reuses `SiteData.songs?.[0]`
+  directly (same sourcing `templates/AnniversaryV2.tsx` already uses) — no
+  new `customData.birthday` field. If `songUrl` is missing, still renders
+  (icon + title) with the toggle disabled and no `<audio>` mounted,
+  matching V2's own graceful degradation. If `songTitle` is missing,
+  renders nothing at all — used in: Birthday V1 — props: `songTitle?:
+  string`, `songUrl?: string`, `ref?: React.Ref<BirthdaySongPlayerHandle>`
+
+## birthdayShared/closing/
+
+- `GrandFinale.tsx` — locked (a small muted prompt) until
+  `templates/BirthdayV1.tsx` reports all 5 Celebration Room objects
+  discovered, then reveals a fade/scale entrance: a one-shot (non-looping)
+  `public/animations/confetti.json` Lottie burst behind "Happy Birthday,
+  {name}!" and `SiteData.message`. Checked Anniversary's own
+  `closing/Signature.tsx` (V2) and `closing/SunsetSignature.tsx` (V1) for a
+  closing-beat reference per this task's own instruction, but this is a
+  genuinely new Birthday-specific implementation, not a shared/ported file
+  — neither Anniversary component gates on a completion condition, and
+  deliberately kept simpler than either for this first pass (a single
+  entrance + one confetti burst, not a whole choreographed sequence with
+  ambient petals/butterflies/glow) — used in: Birthday V1 — props:
+  `personName?: string`, `message: string`, `unlocked: boolean`
+
+## birthdayShared/ (remaining categories)
+
+- `ambient/` — still not built; no Celebration Room container/scene
+  component exists yet. `templates/BirthdayV1.tsx` renders each of its 5
+  interactive objects directly as its own full-screen hub-and-spoke panel
+  rather than inside a dedicated scene wrapper.

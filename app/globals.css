@@ -56,6 +56,22 @@
   animation: cursor-blink 1s step-end infinite;
 }
 
+/* Keeps overflow-y-auto's actual scroll behavior fully working while hiding
+   the scrollbar track/thumb visually — used by
+   interactive/RevealCard.tsx's scrollable card content, where a visible
+   scrollbar would clash with the card's own gold-bordered aesthetic. Both
+   rules are needed: Firefox reads scrollbar-width, Chrome/Safari/Edge read
+   the ::-webkit-scrollbar pseudo-element instead — neither can be set via a
+   React inline `style` prop (no pseudo-element support), hence a real CSS
+   class here rather than an inline style. */
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

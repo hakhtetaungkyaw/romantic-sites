@@ -25,23 +25,25 @@ interface CardAccent {
 }
 
 const CARD_ACCENTS: Record<string, CardAccent> = {
-  // Anniversary V1 — warm peach/terracotta, the template's own primary
-  // accent (#d97a5f, "V1 Golden Hour/Sunset" design system).
   "anniversary-v1": {
     border: "rgba(217,122,95,0.4)",
     borderHover: "rgba(217,122,95,0.85)",
     glow: "rgba(217,122,95,0.4)",
     badgeBorder: "rgba(217,122,95,0.45)",
   },
-  // Anniversary V2 — dark burgundy at rest (echoing the template's own
-  // near-black burgundy background gradient), shifting to champagne gold on
-  // hover (#d4af7a, V2's own metallic accent) — a two-tone hint rather than
-  // V1's single warm tone, matching V2's own "burgundy + gold" palette.
+
   "anniversary-v2": {
     border: "rgba(140,51,85,0.45)",
     borderHover: "rgba(212,175,122,0.85)",
     glow: "rgba(212,175,122,0.4)",
     badgeBorder: "rgba(140,51,85,0.5)",
+  },
+
+  "birthday-v1": {
+    border: "rgba(224, 105, 232, 0.4)",
+    borderHover: "rgba(232, 63, 221, 0.85)",
+    glow: "rgba(226, 103, 235, 0.4)",
+    badgeBorder: "rgba(193, 24, 227, 0.2)",
   },
 };
 
