@@ -33,6 +33,8 @@ export default function AnniversaryV2({ data }: AnniversaryV2Props) {
     title,
     videos,
     photos,
+    constellationRevealPhoto,
+    shootingStarWishPhoto,
     specialDate,
     message,
     milestones,
@@ -97,14 +99,7 @@ export default function AnniversaryV2({ data }: AnniversaryV2Props) {
 
             <LetterCard message={message} />
 
-            <NightSky
-              specialDate={specialDate}
-              // Distinct from CinematicVideo's photos[0] (hero poster) and
-              // ConstellationGame's photos[photos.length-1] (its reveal
-              // photo) below — only genuinely available once there are 3+
-              // photos, per ShootingStarWish.tsx's own usage note.
-              wishPhotoUrl={photos.length > 2 ? photos[1]?.src : undefined}
-            />
+            <NightSky specialDate={specialDate} wishPhotoUrl={shootingStarWishPhoto} />
 
             <Magazine photos={photos} />
 
@@ -119,10 +114,7 @@ export default function AnniversaryV2({ data }: AnniversaryV2Props) {
                 viewport={viewportRepeat}
                 variants={scaleBlurVariant}
               >
-                <ConstellationGame
-                  revealMessage={secretNote}
-                  photoUrl={photos[photos.length - 1]?.src}
-                />
+                <ConstellationGame revealMessage={secretNote} photoUrl={constellationRevealPhoto} />
               </motion.div>
             </section>
 

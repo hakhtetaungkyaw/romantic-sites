@@ -13,6 +13,7 @@ export default function GiftUnwrapPreviewPage() {
     <main className="flex min-h-screen items-center justify-center bg-[#ECE9E6] py-16">
       <GiftUnwrap
         giftMessage={birthday.giftMessage}
+        giftLayerOneKeyword={birthday.giftLayerOneKeyword}
         giftLayerTwoPhrase={birthday.giftLayerTwoPhrase}
         giftWheelItems={birthday.giftWheelItems}
       />

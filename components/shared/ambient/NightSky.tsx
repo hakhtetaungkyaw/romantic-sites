@@ -8,7 +8,9 @@ import { fadeUpVariant, viewportRepeat } from "@/lib/v2ScrollReveal";
 
 interface NightSkySectionProps {
   specialDate: string;
-  /** Optional Cloudinary-hosted photo shown in ShootingStarWish's reveal card. */
+  /** Threaded straight through to interactive/ShootingStarWish.tsx's own
+   *  photoUrl prop — sourced from SiteData.shootingStarWishPhoto (types/
+   *  site.ts), a dedicated field independent of SiteData.photos[]. */
   wishPhotoUrl?: string;
 }
 

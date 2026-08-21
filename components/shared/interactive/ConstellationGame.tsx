@@ -8,7 +8,12 @@ import RevealCard from "@/components/shared/interactive/RevealCard";
 interface ConstellationGameProps {
   /** Shown in the reveal card once all 6 stars are connected in order. */
   revealMessage?: string;
-  /** Optional Cloudinary-hosted photo shown alongside the reveal message. */
+  /** Sourced from `SiteData.constellationRevealPhoto` (types/site.ts) — a
+   *  dedicated field, not an index into `SiteData.photos[]`. That array is
+   *  the gallery/Magazine.tsx's own full-array gallery, so any index
+   *  reused here would always duplicate a photo the customer already sees
+   *  there. This component itself stays agnostic to where the URL comes
+   *  from; templates/AnniversaryV2.tsx does the actual sourcing. */
   photoUrl?: string;
 }
 
@@ -371,8 +376,8 @@ export default function ConstellationGame({
 // import ConstellationGame from "@/components/shared/interactive/ConstellationGame";
 //
 // <ConstellationGame
-//   revealMessage="Every star led me back to you."
-//   photoUrl="https://res.cloudinary.com/<cloud>/image/upload/.../couple.jpg"
+//   revealMessage={secretNote}
+//   photoUrl={constellationRevealPhoto}
 // />
 //
 // Suggested placement in components/templates/AnniversaryV2.tsx: after

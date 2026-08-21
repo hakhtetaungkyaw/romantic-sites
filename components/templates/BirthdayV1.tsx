@@ -235,7 +235,7 @@ export default function BirthdayV1({ data }: BirthdayV1Props) {
                 <BalloonReveal
                   messages={birthday?.balloonMessages ?? []}
                   completionMessage={birthday?.balloonCompletionMessage ?? ""}
-                  photoUrl={data.photos[0]?.src}
+                  photoUrl={birthday?.balloonCompletionPhoto}
                   onAllPopped={() => setBalloonsDiscovered(true)}
                   initialPopped={poppedBalloons}
                   onPoppedChange={setPoppedBalloons}
@@ -255,6 +255,7 @@ export default function BirthdayV1({ data }: BirthdayV1Props) {
               >
                 <GiftUnwrap
                   giftMessage={birthday?.giftMessage ?? ""}
+                  giftLayerOneKeyword={birthday?.giftLayerOneKeyword ?? ""}
                   giftLayerTwoPhrase={birthday?.giftLayerTwoPhrase ?? ""}
                   giftWheelItems={birthday?.giftWheelItems ?? []}
                   initialLandedItem={giftLandedItem}

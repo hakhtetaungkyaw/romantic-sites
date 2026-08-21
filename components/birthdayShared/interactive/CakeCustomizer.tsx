@@ -1029,19 +1029,31 @@ export default function CakeCustomizer({
 
   return (
     <section className="relative flex flex-col items-center px-4 py-6">
-      {/* Full-screen save celebration — fixed + high z-index so it's
-          clearly visible above every other fixed element in this view
-          (BackButton is z-30), purely decorative (pointer-events-none,
-          aria-hidden) so it never blocks the customizer underneath it.
-          AnimatePresence's own exit animation is what fades this back out
-          once showConfetti flips false (see handleSave's own
-          CONFETTI_VISIBLE_MS timeout above) — no whole-screen transition
-          to hide behind here, so the fade has to be this element's own. */}
+      {/* Full-screen save celebration — same standardized full-viewport
+          confetti treatment as hero/BirthdayGate.tsx's own post-candle-blow
+          burst and closing/GrandFinale.tsx's own arrival burst (checked
+          directly, all three now share this shape): `fixed inset-0` +
+          `overflow-hidden`, letting confetti.json's own particle
+          choreography read as launching from the true bottom edge of the
+          whole screen. `fixed` (rather than Gate's own `absolute inset-0`)
+          is what actually gives this the SAME resulting coverage as Gate's
+          version — this component's own root section can be taller than
+          one viewport (all the frosting/topping options), so `absolute`
+          here would only span this section's own tall box rather than the
+          true viewport `fixed` guarantees regardless of scroll position.
+          High z-index (z-40) so it's clearly visible above every other
+          fixed element in this view (BackButton is z-30), purely
+          decorative (pointer-events-none, aria-hidden) so it never blocks
+          the customizer underneath it. AnimatePresence's own exit animation
+          is what fades this back out once showConfetti flips false (see
+          handleSave's own CONFETTI_VISIBLE_MS timeout above) — no
+          whole-screen transition to hide behind here, so the fade has to
+          be this element's own. */}
       <AnimatePresence>
         {showConfetti && (
           <motion.div
             key="cake-save-confetti"
-            className="pointer-events-none fixed inset-0 z-40"
+            className="pointer-events-none fixed inset-0 z-40 overflow-hidden"
             aria-hidden="true"
             initial={{ opacity: 1 }}
             animate={{ opacity: 1 }}

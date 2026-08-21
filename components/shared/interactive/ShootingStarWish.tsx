@@ -8,7 +8,14 @@ import RevealCard from "@/components/shared/interactive/RevealCard";
 interface ShootingStarWishProps {
   /** Shown in the reveal card once the shooting star is caught. */
   wishMessage?: string;
-  /** Optional Cloudinary-hosted photo shown alongside the wish message. */
+  /** Sourced from `SiteData.shootingStarWishPhoto` (types/site.ts) — a
+   *  dedicated field, not an index into `SiteData.photos[]`. That array is
+   *  gallery/Magazine.tsx's own full-array gallery, so any index reused
+   *  here would always duplicate a photo the customer already sees there.
+   *  This component itself stays agnostic to where the URL comes from —
+   *  threaded through ambient/NightSky.tsx's own `wishPhotoUrl` prop, with
+   *  templates/AnniversaryV2.tsx doing the actual sourcing. Optional, same
+   *  as before: no photo renders at all if unset. */
   photoUrl?: string;
 }
 
@@ -289,7 +296,7 @@ export default function ShootingStarWish({
 //
 // <ShootingStarWish
 //   wishMessage="Every star led me back to you."
-//   photoUrl="https://res.cloudinary.com/<cloud>/image/upload/.../couple.jpg"
+//   photoUrl={shootingStarWishPhoto}
 // />
 //
 // Drop this inside an existing `relative` section that already has its own
@@ -301,14 +308,22 @@ export default function ShootingStarWish({
 // own absolute inset-0 overlay and RevealCard's own absolute inset-0 to
 // anchor correctly; no new wrapping section of its own.
 //
-// Message/photo sourcing: every field on SiteData (types/site.ts) is
+// Message sourcing: every text field on SiteData (types/site.ts) is
 // already used somewhere in AnniversaryV2.tsx — message (LetterCard),
 // closingLine (Signature), secretNote (ConstellationGame's reveal, via
 // LoveNote too) — so there's no distinct, still-unused wish-themed field to
 // wire wishMessage from without showing the same note through a third
 // surface. DEFAULT_WISH_MESSAGE above is a plain English fallback for that
 // reason; if a dedicated field is ever added to SiteData for this, wire it
-// then instead. For photoUrl, ConstellationGame already uses
-// photos[photos.length - 1] and CinematicVideo already uses photos[0] — a
-// genuinely distinct photo only exists when there are at least 3, e.g.:
-//   photoUrl={photos.length > 2 ? photos[1]?.src : undefined}
+// then instead.
+//
+// Photo sourcing (revised): photoUrl now comes from SiteData's own
+// dedicated `shootingStarWishPhoto` field (types/site.ts), threaded through
+// ambient/NightSky.tsx's own wishPhotoUrl prop. No more index-juggling
+// needed — an earlier pass sourced this from `photos[1]` (only shown when
+// 3+ photos existed, to avoid repeating CinematicVideo's `photos[0]` poster
+// and ConstellationGame's `photos[length-1]` reveal photo), but all three
+// of those indices still duplicated something gallery/Magazine.tsx's own
+// full-array gallery already showed — a genuinely separate field sidesteps
+// that entirely, and the "only render if provided" graceful degradation
+// stays exactly the same as before.

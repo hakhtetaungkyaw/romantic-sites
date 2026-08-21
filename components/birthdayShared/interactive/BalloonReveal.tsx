@@ -56,9 +56,13 @@ interface BalloonRevealProps {
   messages: string[];
   /** Shown in the completion reveal card once every balloon has been popped. */
   completionMessage: string;
-  /** Reuses SiteData.photos[0] — same single-photo-accent sourcing
-   *  ambient/GoldenSkySection.tsx's own PhotoAccent documents for its own
-   *  accent slot, not a dedicated Birthday-specific photo field. */
+  /** Sourced from `customData.birthday.balloonCompletionPhoto` (a
+   *  dedicated field, not an index into `SiteData.photos[]`) — that array
+   *  is exclusively the Memory Frame gallery's own content, and since
+   *  interactive/MemoryFrames.tsx shows the WHOLE array, any index reused
+   *  here would always duplicate something the customer already sees in
+   *  the gallery. This component itself stays agnostic to where the URL
+   *  comes from; templates/BirthdayV1.tsx does the actual sourcing. */
   photoUrl?: string;
   /** Fired once, the moment the final balloon is popped (not gated on the
    *  completion reveal's own display/hold timing) — lets a parent template
@@ -705,7 +709,7 @@ export default function BalloonReveal({
 // <BalloonReveal
 //   messages={customData.birthday?.balloonMessages ?? []}
 //   completionMessage={customData.birthday?.balloonCompletionMessage ?? ""}
-//   photoUrl={photos[0]?.src}
+//   photoUrl={customData.birthday?.balloonCompletionPhoto}
 //   initialPopped={poppedBalloons}
 //   onPoppedChange={setPoppedBalloons}
 //   onBack={() => setActiveView("hub")}

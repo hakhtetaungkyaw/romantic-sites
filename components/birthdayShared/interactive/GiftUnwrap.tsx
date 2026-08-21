@@ -58,6 +58,8 @@ import { createPortal } from "react-dom";
 
 interface GiftUnwrapProps {
   giftMessage: string;
+  /** Shown inline after layer 1 (the ribbon) is removed. */
+  giftLayerOneKeyword: string;
   /** Shown inline after layer 2 (the wrapping paper) is removed. */
   giftLayerTwoPhrase: string;
   /** The 7 spin-wheel segment labels shown once the box (layer 3) opens. */
@@ -983,6 +985,7 @@ function BackButton({ onClick }: { onClick: () => void }) {
 
 interface LayerRevealProps {
   layer: Layer;
+  layerOneKeyword: string;
   layerTwoPhrase: string;
 }
 
@@ -1000,7 +1003,7 @@ interface LayerRevealProps {
 // reads as a small celebratory reveal.
 const REVEAL_POP_TRANSITION = { duration: 0.45, ease: "easeOut" as const };
 
-function LayerReveal({ layer, layerTwoPhrase }: LayerRevealProps) {
+function LayerReveal({ layer, layerOneKeyword, layerTwoPhrase }: LayerRevealProps) {
   return (
     <div className="relative mt-6 min-h-[128px] w-full max-w-sm text-center">
       <AnimatePresence mode="wait">
@@ -1016,7 +1019,7 @@ function LayerReveal({ layer, layerTwoPhrase }: LayerRevealProps) {
             <svg viewBox="-10 -13 20 17" width={30} height={26} aria-hidden="true">
               <path d={heartPath(9)} fill="#d05f0e" stroke="#a9573d" strokeWidth={0.75} />
             </svg>
-            <p className="font-display text-3xl font-medium text-[#d97a5f] sm:text-4xl">Joy</p>
+            <p className="font-display text-3xl font-medium text-[#d97a5f] sm:text-4xl">{layerOneKeyword}</p>
             <p className="mt-1 text-[10px] uppercase tracking-[0.3em] text-[#6b4332]/50">Layer 1 of 3</p>
           </motion.div>
         )}
@@ -1134,7 +1137,7 @@ function GiftReveal({ isOpen, onClose, landedItem, message }: GiftRevealProps) {
 
               {/* The wheel's own payoff — the actual landed item, styled
                   as the modal's primary focus (same vivid-terracotta
-                  emphasis treatment LayerReveal's own "Joy"/phrase text
+                  emphasis treatment LayerReveal's own keyword/phrase text
                   uses), with giftMessage below it now reading as
                   supporting context rather than the modal's sole
                   content. */}
@@ -1162,6 +1165,7 @@ function GiftReveal({ isOpen, onClose, landedItem, message }: GiftRevealProps) {
 
 export default function GiftUnwrap({
   giftMessage,
+  giftLayerOneKeyword,
   giftLayerTwoPhrase,
   giftWheelItems,
   onWheelSpin,
@@ -1304,7 +1308,9 @@ export default function GiftUnwrap({
           )}
         </AnimatePresence>
 
-        {layer < 3 && <LayerReveal layer={layer} layerTwoPhrase={giftLayerTwoPhrase} />}
+        {layer < 3 && (
+          <LayerReveal layer={layer} layerOneKeyword={giftLayerOneKeyword} layerTwoPhrase={giftLayerTwoPhrase} />
+        )}
 
         {/* Minimal progress cue — 3 dots, one per unwrap layer, filling
             solid as each comes off. Same "one per unit, filled as reached"
@@ -1352,6 +1358,7 @@ export default function GiftUnwrap({
 //
 // <GiftUnwrap
 //   giftMessage={customData.birthday?.giftMessage ?? ""}
+//   giftLayerOneKeyword={customData.birthday?.giftLayerOneKeyword ?? ""}
 //   giftLayerTwoPhrase={customData.birthday?.giftLayerTwoPhrase ?? ""}
 //   giftWheelItems={customData.birthday?.giftWheelItems ?? []}
 //   initialLandedItem={landedItem}

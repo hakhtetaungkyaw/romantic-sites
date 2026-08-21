@@ -59,6 +59,12 @@ export const dummySiteData: SiteData = {
     "From the moment we met, I knew my life had changed for the better. Every day with you feels like a new page in the best story I've ever known. Thank you for your laughter, your patience, and your endless love. Here's to every memory we've made and every one still waiting for us.",
   specialDate: "2026-06-14T00:00:00.000Z",
   photos: galleryPhotos,
+  // Both distinct from every photo already used elsewhere in this dataset —
+  // galleryPhotos only ever draws from couple-01 through couple-12 (also
+  // reused by milestones/places above and CinematicVideo's own photos[0]
+  // poster), so couple-13/14 here are genuinely never seen anywhere else.
+  constellationRevealPhoto: "/demo-assets/photos/couple-13.jpg",
+  shootingStarWishPhoto: "/demo-assets/photos/couple-14.jpg",
   songs: [{ title: "Our Song", url: "/audio/Dandelions.mp3" }],
   videos: [
     { src: "/videos/hero-01.mp4", role: "hero" },
@@ -170,6 +176,15 @@ const birthdayCustomData: BirthdayCustomData = {
   ],
   balloonCompletionMessage:
     "Every single one of those is true, by the way — and there are a hundred more where they came from.",
+  // Distinct from every photo already used elsewhere in this dummy object
+  // (birthdayMemoryPhotos' own 6 gallery entries, giftPhoto below) — see
+  // types/site.ts's own doc comment on why this needs its own dedicated
+  // photo rather than reusing a gallery index.
+  balloonCompletionPhoto: "/demo-assets/photos/couple-08.jpg",
+  // Was a hardcoded literal inside interactive/GiftUnwrap.tsx itself until
+  // this field existed — kept as the same word here now that it's a real,
+  // sourced value rather than baked into the component.
+  giftLayerOneKeyword: "Joy",
   giftLayerTwoPhrase: "Getting warmer...",
   giftWheelItems: [
     "A trip together",
