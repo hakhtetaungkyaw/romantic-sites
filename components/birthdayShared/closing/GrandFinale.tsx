@@ -84,9 +84,9 @@ interface FinaleSparkleConfig {
 const FINALE_SPARKLES: FinaleSparkleConfig[] = [
   { leftPct: 6, topPct: 12, size: 20, duration: 2.6, delay: 0 },
   { leftPct: 93, topPct: 16, size: 29, duration: 3, delay: 0.6 },
-  { leftPct: 4, topPct: 52, size: 62, duration: 2.4, delay: 1.2 },
+  { leftPct: 4, topPct: 52, size: 42, duration: 2.4, delay: 1.2 },
   { leftPct: 95, topPct: 56, size: 29.5, duration: 2.8, delay: 0.4 },
-  { leftPct: 10, topPct: 88, size: 19, duration: 3.2, delay: 1.6 },
+  { leftPct: 10, topPct: 88, size: 24, duration: 3.2, delay: 1.6 },
   { leftPct: 90, topPct: 90, size: 28.5, duration: 2.6, delay: 0.9 },
 ];
 
@@ -107,7 +107,7 @@ function FinaleAmbientSparkles() {
             animate={{ opacity: [0.25, 0.7, 0.25], scale: [0.75, 1.05, 0.75] }}
             transition={{ duration: sparkle.duration, repeat: Infinity, delay: sparkle.delay, ease: "easeInOut" }}
           >
-            <path d={sparklePath(half)} fill="#fff3d6" stroke="#f0a05c" strokeWidth={0.5} />
+            <path d={sparklePath(half)} fill="#fff3d6" stroke="#f39442" strokeWidth={0.5} />
           </motion.svg>
         );
       })}
@@ -164,7 +164,13 @@ function useWordReveal(message: string, msPerWord: number) {
 }
 
 export default function GrandFinale({ personName, message, unlocked }: GrandFinaleProps) {
-  const heading = personName ? `Happy Birthday, ${personName}!` : "Happy Birthday!";
+  const heading = personName ? (
+    <>
+      Happy Birthday, <span className="text-[#4286d4]">{personName}</span>!
+    </>
+  ) : (
+    "Happy Birthday!"
+  );
   const { words, revealedCount } = useWordReveal(message, MS_PER_WORD);
 
   return (

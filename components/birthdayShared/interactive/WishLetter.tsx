@@ -1,8 +1,11 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import Lottie from "lottie-react";
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+
+import manFlyingAnimation from "@/public/animations/man-flying.json";
 
 // Birthday V1 "Celebration Room" interactive object #5 — catch a shooting
 // star, write a wish, release it. Adapts the shooting-star-catch mechanic
@@ -275,52 +278,60 @@ function DuskGlowOrb() {
   );
 }
 
-interface DuskCloud {
-  top: number;
-  scale: number;
-  opacity: number;
-  duration: number;
-  delay: number;
-  direction: 1 | -1;
-}
+// Ambient flying figure — replaces the earlier DuskCloudShape drift with
+// public/animations/man-flying.json (recolored in-place: its native
+// FF4320/FFD928/5F7AFF cartoon palette was swapped for this scene's own
+// #e8b869 gold / #f3cf8e light gold / #c96a4f terracotta trio, same tones
+// ProminentStars/DuskGlowOrb/ShootingStar already establish, while black
+// linework and near-white highlights were left untouched for shape
+// definition — so no CSS filter is needed here the way
+// lib/v1ButterflyFilters.ts retints butterfly.json for Anniversary V1: that
+// file's own gradient fill is a single saturated hue a hue-rotate can slide
+// along one band, but man-flying.json's three flat fills sit ~9deg/~49deg/
+// ~230deg apart on the wheel — no single hue-rotate can pull all three into
+// one gold band at once, so the JSON's own fill values were edited directly
+// instead.
+//
+// Fixed, non-random single-loop trajectory (no per-instance variation
+// needed — there's only ever one of these on screen) diagonally
+// bottom-left -> top-right, entering/exiting just past the edges (-8%/108%)
+// so it's never seen popping in/out mid-frame, with a quick opacity
+// fade-in/out bracketing the travel (times 0/0.06/0.94/1, same
+// keyframe+times shape ShootingStar's own trail opacity and the "Catch it"
+// hint span above both already use) rather than a hard cut — Framer
+// Motion's default repeatType is "loop" (jumps back to the first keyframe),
+// not "reverse"/"mirror", so `repeat: Infinity` alone already restarts from
+// bottom-left every cycle instead of bouncing back down-left.
+// Deliberately slower than the shooting star's own MIN/MAX_DURATION_S
+// (3-4.5s) transit — this is ambient scenery, not the interactive element,
+// so it shouldn't compete for attention.
+const FLYING_FIGURE_DURATION_S = 16;
+const FLYING_FIGURE_LEFT = ["-8%", "-2.2%", "102.2%", "108%"];
+const FLYING_FIGURE_TOP = ["108%", "102.2%", "-2.2%", "-8%"];
+const FLYING_FIGURE_OPACITY = [0, 1, 1, 0];
+const FLYING_FIGURE_TIMES = [0, 0.06, 0.94, 1];
 
-// Hand-placed, not generated — only 2 instances, same reasoning every other
-// small fixed decorative set in this project's Birthday files gives.
-// Negative delay starts each cloud partway through its own drift cycle
-// (same trick ambient/NightSky.tsx's own CLOUDS uses) so the two don't
-// enter from the same edge together.
-const DUSK_CLOUDS: DuskCloud[] = [
-  { top: 16, scale: 1, opacity: 0.14, duration: 95, delay: -18, direction: 1 },
-  { top: 38, scale: 0.78, opacity: 0.1, duration: 130, delay: -70, direction: -1 },
-];
-
-// 3 overlapping blurred blobs per cloud — same silhouette technique
-// ambient/NightSky.tsx's own CloudShape uses, reimplemented locally in a
-// warm cream tone (rather than that file's own #f7ecd2-on-navy) so it reads
-// as a warm haze drifting past the dusk sky, not a cool night cloud.
-function DuskCloudShape({ cloud }: { cloud: DuskCloud }) {
+// z-[2]: above the unstacked background layers (starfield/prominent
+// stars/glow orb, all z-index:auto) but safely below the shooting star's
+// own z-[5] hit-area layer and the BackButton's z-30 — purely decorative
+// (aria-hidden + pointer-events-none) so it can never intercept a tap meant
+// for the star or sit visually on top of the wish card/modal (z-40).
+function FlyingFigure() {
   return (
     <motion.div
       aria-hidden="true"
-      className="pointer-events-none absolute h-14 w-44 sm:h-20 sm:w-64"
-      style={{ top: `${cloud.top}%`, opacity: cloud.opacity, scale: cloud.scale }}
-      animate={{ left: cloud.direction > 0 ? ["-30%", "130%"] : ["130%", "-30%"] }}
-      transition={{ duration: cloud.duration, delay: cloud.delay, repeat: Infinity, ease: "linear" }}
+      className="pointer-events-none absolute z-[2] h-14 w-14 -translate-x-1/2 -translate-y-1/2 sm:h-20 sm:w-20"
+      initial={{ left: FLYING_FIGURE_LEFT[0], top: FLYING_FIGURE_TOP[0], opacity: 0 }}
+      animate={{ left: FLYING_FIGURE_LEFT, top: FLYING_FIGURE_TOP, opacity: FLYING_FIGURE_OPACITY }}
+      transition={{
+        duration: FLYING_FIGURE_DURATION_S,
+        times: FLYING_FIGURE_TIMES,
+        repeat: Infinity,
+        ease: "linear",
+      }}
     >
-      <div className="absolute inset-0 rounded-full bg-[#fdf1da] blur-2xl" />
-      <div className="absolute left-[15%] top-[15%] h-[65%] w-[55%] rounded-full bg-[#fdf1da] blur-2xl" />
-      <div className="absolute right-[10%] top-[5%] h-[75%] w-[45%] rounded-full bg-[#fdf1da] blur-2xl" />
+      <Lottie animationData={manFlyingAnimation} loop autoplay />
     </motion.div>
-  );
-}
-
-function DuskClouds() {
-  return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-      {DUSK_CLOUDS.map((cloud, i) => (
-        <DuskCloudShape key={i} cloud={cloud} />
-      ))}
-    </div>
   );
 }
 
@@ -831,7 +842,7 @@ export default function WishLetter({ onWishSent, onBack }: WishLetterProps) {
 
       <AmbientStarfield />
       <ProminentStars />
-      <DuskClouds />
+      <FlyingFigure />
       <DuskGlowOrb />
 
       <p className="relative z-10 max-w-xs text-center text-xs uppercase tracking-[0.35em] text-[#fdf6ec]/80">

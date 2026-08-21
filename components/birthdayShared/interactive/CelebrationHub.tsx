@@ -1040,7 +1040,13 @@ export default function CelebrationHub({
   // hero/BirthdayGate.tsx's own candle-blow greeting before it), not a
   // lesser echo of it. No trailing emoji — see ConfettiBurstIcon above,
   // which replaces what used to be a literal 🎉 here.
-  const heading = personName ? `Happy Birthday, ${personName}!` : "Happy Birthday!";
+  const heading = personName ? (
+    <>
+      Happy Birthday, <span className="text-[#4286d4]">{personName}</span>!
+    </>
+  ) : (
+    "Happy Birthday!"
+  );
 
   return (
     <section className="relative flex w-full flex-col items-center px-6 py-5">

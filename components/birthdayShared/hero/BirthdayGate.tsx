@@ -354,7 +354,13 @@ export default function BirthdayGate({ children, onOpen, age, personName }: Birt
   // (BirthdayCustomData already documents people[0].name as the single
   // birthday person to reuse). Falls back to the plain greeting when unset,
   // so the gate stays usable/testable without requiring a name.
-  const heading = personName ? `Happy Birthday, ${personName}!` : "Happy Birthday!";
+  const heading = personName ? (
+    <>
+      Happy Birthday, <span className="text-[#4286d4]">{personName}</span>!
+    </>
+  ) : (
+    "Happy Birthday!"
+  );
 
   // Fully automatic entrance: greeting -> building -> lit, no tap required
   // until "lit". buildingDurationMs is scaled to candleCount so "lit" only

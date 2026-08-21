@@ -3,12 +3,16 @@
 import { requireAdminSession } from "@/lib/adminAuth";
 import { prisma, withRetry } from "@/lib/db";
 import { siteDataToOrderFields } from "@/lib/orderMapper";
-import type { BirthdayCustomData, SiteData } from "@/types/site";
+
+import {
+  buildBirthdayV1SiteData,
+  validateBirthdayV1OrderInput,
+  type BirthdayV1OrderInput,
+} from "../../_shared/birthdayV1Order";
 
 // Lowercase letters/digits, single dashes as separators — no leading/
 // trailing/doubled dashes, no uppercase, no underscores or spaces.
 const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-const isUrl = (value: string) => /^https?:\/\//i.test(value.trim());
 
 export async function checkSlugAvailable(
   slug: string,
@@ -29,42 +33,7 @@ export async function checkSlugAvailable(
   return { available: !existing };
 }
 
-export interface CreateBirthdayOrderInput {
-  name: string;
-  age: number | null;
-  /** yyyy-mm-dd, from an <input type="date">. */
-  birthdate: string;
-  slug: string;
-  title: string;
-  customerName: string;
-  customerEmail: string;
-  /** Both optional — matches interactive/BirthdaySongPlayer.tsx's own
-   *  established graceful degradation (no songTitle at all renders
-   *  nothing; a songTitle with no songUrl renders disabled). Empty
-   *  songUrl means no `songs` array is written at all — never an empty
-   *  array — see this file's own songs construction below. */
-  songUrl: string;
-  songTitle: string;
-  message: string;
-  /** At least 1 — the Memory Frame gallery's full array (dynamic length;
-   *  interactive/MemoryFrames.tsx has no hardcoded count assumption, see
-   *  this route's own page.tsx for the confirmation). */
-  photos: { src: string; caption: string }[];
-  /** Independent of `photos[]` above — see types/site.ts's own doc comment
-   *  on BirthdayCustomData.balloonCompletionPhoto for why. */
-  balloonCompletionPhoto: string;
-  cakeWishMessage: string;
-  /** Exactly 7. */
-  balloonMessages: string[];
-  balloonCompletionMessage: string;
-  giftLayerOneKeyword: string;
-  giftLayerTwoPhrase: string;
-  giftMessage: string;
-  /** Exactly 7. */
-  giftWheelItems: string[];
-  giftPhoto: string;
-}
-
+export type CreateBirthdayOrderInput = BirthdayV1OrderInput;
 export type CreateBirthdayOrderResult = { ok: true; slug: string } | { ok: false; error: string };
 
 export async function createBirthdayV1Order(
@@ -77,37 +46,10 @@ export async function createBirthdayV1Order(
   // its own caller (this project's own node_modules/next/dist/docs/01-app/
   // 02-guides/authentication.md explicitly says to treat Server Actions
   // like public-facing endpoints).
+  const validationError = validateBirthdayV1OrderInput(input);
+  if (validationError) return { ok: false, error: validationError };
+
   const slug = input.slug.trim();
-  if (!SLUG_PATTERN.test(slug)) return { ok: false, error: "Invalid slug format." };
-  if (!input.name.trim()) return { ok: false, error: "Name is required." };
-  if (!input.birthdate || Number.isNaN(Date.parse(input.birthdate))) {
-    return { ok: false, error: "A valid birthdate is required." };
-  }
-  if (!input.title.trim()) return { ok: false, error: "Room title is required." };
-  if (!input.customerName.trim()) return { ok: false, error: "Customer name is required." };
-  if (input.songUrl.trim() && !isUrl(input.songUrl)) {
-    return { ok: false, error: "Song URL must start with http:// or https://." };
-  }
-  if (!input.message.trim()) return { ok: false, error: "Grand Finale message is required." };
-  if (input.photos.length < 1 || input.photos.some((p) => !p.src.trim())) {
-    return { ok: false, error: "At least 1 gallery photo (with a URL) is required." };
-  }
-  if (!input.balloonCompletionPhoto.trim()) {
-    return { ok: false, error: "The balloon completion photo is required." };
-  }
-  if (!input.cakeWishMessage.trim()) return { ok: false, error: "Cake wish message is required." };
-  if (input.balloonMessages.length !== 7 || input.balloonMessages.some((m) => !m.trim())) {
-    return { ok: false, error: "Exactly 7 balloon messages are required." };
-  }
-  if (!input.balloonCompletionMessage.trim()) {
-    return { ok: false, error: "Balloon completion message is required." };
-  }
-  if (!input.giftLayerOneKeyword.trim()) return { ok: false, error: "Gift layer-one keyword is required." };
-  if (!input.giftLayerTwoPhrase.trim()) return { ok: false, error: "Gift layer-two phrase is required." };
-  if (!input.giftMessage.trim()) return { ok: false, error: "Gift message is required." };
-  if (input.giftWheelItems.length !== 7 || input.giftWheelItems.some((i) => !i.trim())) {
-    return { ok: false, error: "Exactly 7 gift wheel items are required." };
-  }
 
   const template = await withRetry(() =>
     prisma.template.findUnique({ where: { componentKey: "birthday-v1" } }),
@@ -120,43 +62,7 @@ export async function createBirthdayV1Order(
     };
   }
 
-  const birthdayCustomData: BirthdayCustomData = {
-    age: input.age ?? undefined,
-    cakeWishMessage: input.cakeWishMessage.trim(),
-    balloonMessages: input.balloonMessages.map((m) => m.trim()),
-    balloonCompletionMessage: input.balloonCompletionMessage.trim(),
-    balloonCompletionPhoto: input.balloonCompletionPhoto.trim(),
-    giftLayerOneKeyword: input.giftLayerOneKeyword.trim(),
-    giftLayerTwoPhrase: input.giftLayerTwoPhrase.trim(),
-    giftWheelItems: input.giftWheelItems.map((i) => i.trim()),
-    giftMessage: input.giftMessage.trim(),
-    // Not currently rendered anywhere: interactive/GiftUnwrap.tsx's own
-    // reveal modal had its photo prop removed in an earlier pass (see that
-    // file's own trailing usage comment). Still collected here since it's
-    // a real field on BirthdayCustomData, for whenever a future object
-    // wants it — left undefined if the admin leaves it blank.
-    giftPhoto: input.giftPhoto.trim() || undefined,
-  };
-
-  // No `songs` array at all when songUrl is blank — never an empty array
-  // — so interactive/BirthdaySongPlayer.tsx's own `songs?.[0]` sourcing
-  // (templates/BirthdayV1.tsx) sees `undefined` and falls into its
-  // already-established disabled/no-song render path, the same as any
-  // order created without this section filled in before it existed.
-  const songUrl = input.songUrl.trim();
-  const songs: SiteData["songs"] = songUrl
-    ? [{ url: songUrl, title: input.songTitle.trim() || "Happy Birthday" }]
-    : undefined;
-
-  const siteData: SiteData = {
-    people: [{ name: input.name.trim() }],
-    title: input.title.trim(),
-    message: input.message.trim(),
-    specialDate: new Date(input.birthdate).toISOString(),
-    photos: input.photos.map((p) => ({ src: p.src.trim(), caption: p.caption.trim() || undefined })),
-    songs,
-    customData: { birthday: birthdayCustomData },
-  };
+  const siteData = buildBirthdayV1SiteData(input);
 
   try {
     const order = await withRetry(() =>

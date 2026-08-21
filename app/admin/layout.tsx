@@ -16,6 +16,10 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+// Dark-dashboard base — every admin page sets its own matching `bg-[#1a1a1a]`
+// on its own <main>, but this wrapper is the one place the whole tree's dark
+// theme is anchored, so a page that forgets its own background still reads
+// as dark rather than flashing the light/cream customer-facing palette.
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return <div className="min-h-screen bg-[#1a1a1a] text-gray-200">{children}</div>;
 }
