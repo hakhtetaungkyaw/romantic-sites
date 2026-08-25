@@ -25,6 +25,22 @@ const templates = [
     // is decided.
     price: 0,
   },
+  {
+    name: "Birthday V2",
+    category: "birthday",
+    componentKey: "birthday-v2",
+    price: 0,
+    // Phase 1 build — only the entrance sequence exists, everything past it
+    // is a placeholder. `isActive: false` keeps it off the PUBLIC homepage's
+    // TemplateShowcase (app/page.tsx queries Template rows with
+    // `isActive: true` directly — unrelated to
+    // app/admin/_shared/NewOrderPicker.tsx's own hardcoded, always-active
+    // entry for this template), so a real customer can't stumble onto it as
+    // a purchasable option while the admin can still create orders for it
+    // internally. Flip to true once enough phases are done to actually sell
+    // this.
+    isActive: false,
+  },
 ];
 
 async function main() {

@@ -64,6 +64,53 @@ export interface SiteData {
     photo?: string;
   }[];
   closingLine?: string;
+  /** ambient/GoldenSkySection.tsx's own italic caption line (below the
+   *  people heading) and love-note paragraph (beside the sunflower
+   *  centerpiece) — both were hardcoded copy until Anniversary V1's admin
+   *  form could set them; each falls back to that component's own default
+   *  string when unset, same "optional override" shape closingLine already
+   *  established. Rides inside Order.customData like closingLine (no
+   *  dedicated column), not nested under an "anniversary" key. */
+  goldenSkyCaption?: string;
+  goldenSkyLoveNote?: string;
+  /** ambient/GoldenSkySection.tsx's own standalone accent photo, shown
+   *  beside the sunflower centerpiece — a single URL, deliberately its own
+   *  field rather than an index into `photos[]` above. Previously sourced
+   *  from `photos[0]`, which meant the accent photo was never actually
+   *  independent from the gallery's own first entry (whatever the customer
+   *  put first in their gallery list also became this section's accent,
+   *  with no way to pick a different one) — the same "own dedicated field,
+   *  not an index into the shared array" reasoning `photos[]`'s own doc
+   *  comment above already establishes for `constellationRevealPhoto`/
+   *  `shootingStarWishPhoto` (V2) and `BirthdayCustomData`'s own
+   *  `balloonCompletionPhoto`/`giftPhoto` (Birthday). Optional — when
+   *  unset, that section's own accent-photo slot simply doesn't render
+   *  (see its own `accentPhoto &&` conditional), it does NOT fall back to
+   *  `photos[0]`, since silently reintroducing that fallback would
+   *  reintroduce the exact coupling this field exists to remove. */
+  goldenSkyPhoto?: string;
+  /** ambient/NightSky.tsx's (V2) own italic caption line, previously
+   *  hardcoded ("The sky looked like this, the night it all began.") —
+   *  same "optional override, falls back to that component's own default
+   *  string when unset" shape as goldenSkyCaption above (in fact this
+   *  exact line was the original inspiration for that one's cadence, per
+   *  closing/SunsetSignature.tsx's own doc comment). Flat customData key,
+   *  no dedicated column. */
+  nightSkyCaption?: string;
+  /** interactive/ShootingStarWish.tsx's (V2) own reveal-card text, shown
+   *  once the shooting star is caught — a real, typed prop on that
+   *  component that was never actually wired to any SiteData field before
+   *  (ambient/NightSky.tsx, which wraps it, only ever threaded photoUrl
+   *  through, never wishMessage), so every order showed the same generic
+   *  DEFAULT_WISH_MESSAGE regardless of customer data. Deliberately its
+   *  own dedicated field rather than reusing secretNote (which already
+   *  feeds both interactive/LoveNote.tsx and interactive/
+   *  ConstellationGame.tsx's own revealMessage) — this is a genuinely
+   *  separate "moment" from the constellation reveal, same reasoning that
+   *  already gave constellationRevealPhoto/shootingStarWishPhoto their own
+   *  dedicated fields instead of indexing into photos[]. Optional, falls
+   *  back to that component's own default when unset. */
+  shootingStarWishMessage?: string;
   secretNote?: string;
   places?: {
     name: string;
@@ -73,6 +120,31 @@ export interface SiteData {
     photo?: string;
   }[];
   typedPhrases?: string[];
+  /** `birthdayShared/hero/CountdownReveal.tsx`'s (Birthday V2) own entrance-
+   *  sequence personal message — the one piece of customizable text in that
+   *  sequence ("Your Special Day Is Coming" and "Happy Birthday {names}!"
+   *  are fixed copy, personalized only by `people`, not by admin-entered
+   *  text). Deliberately its own dedicated field rather than reusing
+   *  `message` (which every other template already gives a different,
+   *  template-specific role — V1 Birthday's Grand Finale, V2 Anniversary's
+   *  letter card — and which Birthday V2's own later phases may still want
+   *  for something else entirely, e.g. a future grand-finale-style moment).
+   *  Optional at the type level like every other flat customData-riding
+   *  field here; Birthday V2's own admin form makes it required in
+   *  practice, since it's the only customizable text the entrance sequence
+   *  has. */
+  birthdayV2Message?: string;
+  /** `interactive/PhotoSphereGallery.tsx`'s (Birthday V2) own node-repeat
+   *  control — how many times each photo repeats around the sphere (node
+   *  count = `photos.length * galleryRepeatMultiplier`), so a sparse
+   *  6-photo order can fill the sphere out (e.g. x3 = 18 nodes) without a
+   *  15-photo order also getting multiplied into an overcrowded 45. Left
+   *  undefined when the admin leaves the field blank — that's not "no
+   *  repeat," it means "auto-calculate a sensible multiplier from the
+   *  photo count," which the component itself resolves (see that file's
+   *  own `resolveRepeatMultiplier`), not a fixed default baked in here.
+   *  Clamped to [1, 5] wherever it's actually used. */
+  galleryRepeatMultiplier?: number;
   /**
    * Escape hatch for genuinely new, template-specific data that doesn't fit
    * an existing field yet. Not a dumping ground — if a field turns out to be

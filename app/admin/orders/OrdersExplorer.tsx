@@ -6,7 +6,8 @@ import { useMemo, useRef, useState } from "react";
 
 import { formatDateTime } from "@/lib/format";
 
-import { DeliveryStatusBadge, PaymentStatusBadge } from "./StatusBadge";
+import OrderRowActions from "./OrderRowActions";
+import { ArchivedBadge, DeliveryStatusBadge, PaymentStatusBadge } from "./StatusBadge";
 
 export interface OrderRow {
   id: string;
@@ -16,6 +17,7 @@ export interface OrderRow {
   templateCategory: string;
   paymentStatus: string;
   deliveryStatus: string;
+  isArchived: boolean;
   /** ISO string — Dates don't need to cross the server/client boundary here,
    *  and a plain string sidesteps ever having to think about whether they
    *  would serialize correctly if they did. */
@@ -37,12 +39,14 @@ export default function OrdersExplorer({
   initialPayment,
   initialDelivery,
   initialQ,
+  initialShowArchived,
 }: {
   orders: OrderRow[];
   initialCategory: string;
   initialPayment: string;
   initialDelivery: string;
   initialQ: string;
+  initialShowArchived: boolean;
 }) {
   const pathname = usePathname();
 
@@ -57,6 +61,26 @@ export default function OrdersExplorer({
   const [payment, setPayment] = useState(initialPayment);
   const [delivery, setDelivery] = useState(initialDelivery);
   const [q, setQ] = useState(initialQ);
+  const [showArchived, setShowArchived] = useState(initialShowArchived);
+
+  // Local copy of `orders`, not the prop itself — verified live (see this
+  // task's own verification pass) that calling setOrderArchived from
+  // OrderRowActions below and relying on its revalidatePath("/admin/
+  // orders") call alone does NOT refresh this already-mounted component's
+  // `orders` prop: the row stayed undimmed, badge-less, and still filtered
+  // in after archiving. revalidatePath still runs server-side (so a real
+  // reload/re-navigation is correct), but the immediate in-place row
+  // update — dimming, ArchivedBadge, and dropping out of the default
+  // (non-"Show archived") view — needs this explicit local state instead.
+  // handleArchivedChange below is the single place that writes to it, kept
+  // in sync with each row's own OrderRowActions via a controlled
+  // `archived`/`onArchivedChange` prop pair rather than each row owning
+  // parallel local state that could drift from this array.
+  const [orderRows, setOrderRows] = useState(orders);
+
+  function handleArchivedChange(id: string, isArchived: boolean) {
+    setOrderRows((prev) => prev.map((order) => (order.id === id ? { ...order, isArchived } : order)));
+  }
 
   const urlSyncDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -69,29 +93,41 @@ export default function OrdersExplorer({
   // round-trip's result would just be discarded (this component owns
   // filtering entirely client-side once mounted). `history.replaceState`
   // updates the address bar with zero network activity.
-  function syncUrl(next: { category: string; payment: string; delivery: string; q: string }) {
+  function syncUrl(next: {
+    category: string;
+    payment: string;
+    delivery: string;
+    q: string;
+    showArchived: boolean;
+  }) {
     const params = new URLSearchParams();
     if (next.category !== "all") params.set("category", next.category);
     if (next.payment !== "all") params.set("payment", next.payment);
     if (next.delivery !== "all") params.set("delivery", next.delivery);
     if (next.q) params.set("q", next.q);
+    if (next.showArchived) params.set("archived", "1");
     const qs = params.toString();
     window.history.replaceState(null, "", qs ? `${pathname}?${qs}` : pathname);
   }
 
   function handleCategoryChange(value: string) {
     setCategory(value);
-    syncUrl({ category: value, payment, delivery, q });
+    syncUrl({ category: value, payment, delivery, q, showArchived });
   }
 
   function handlePaymentChange(value: string) {
     setPayment(value);
-    syncUrl({ category, payment: value, delivery, q });
+    syncUrl({ category, payment: value, delivery, q, showArchived });
   }
 
   function handleDeliveryChange(value: string) {
     setDelivery(value);
-    syncUrl({ category, payment, delivery: value, q });
+    syncUrl({ category, payment, delivery: value, q, showArchived });
+  }
+
+  function handleShowArchivedChange(value: boolean) {
+    setShowArchived(value);
+    syncUrl({ category, payment, delivery, q, showArchived: value });
   }
 
   function handleSearchChange(value: string) {
@@ -101,14 +137,15 @@ export default function OrdersExplorer({
     // rewritten, so rapid typing doesn't spam browser history entries.
     if (urlSyncDebounceRef.current) clearTimeout(urlSyncDebounceRef.current);
     urlSyncDebounceRef.current = setTimeout(
-      () => syncUrl({ category, payment, delivery, q: value.trim() }),
+      () => syncUrl({ category, payment, delivery, q: value.trim(), showArchived }),
       300,
     );
   }
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    return orders.filter((order) => {
+    return orderRows.filter((order) => {
+      if (!showArchived && order.isArchived) return false;
       if (category !== "all" && order.templateCategory !== category) return false;
       if (payment !== "all" && order.paymentStatus !== payment) return false;
       if (delivery !== "all" && order.deliveryStatus !== delivery) return false;
@@ -118,7 +155,7 @@ export default function OrdersExplorer({
       }
       return true;
     });
-  }, [orders, category, payment, delivery, q]);
+  }, [orderRows, category, payment, delivery, q, showArchived]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -172,6 +209,15 @@ export default function OrdersExplorer({
             <option value="in_progress">In progress</option>
             <option value="delivered">Delivered</option>
           </select>
+          <label className="flex items-center gap-2 rounded-lg border border-white/15 bg-[#1e1e21] px-3 py-2 text-sm text-gray-300">
+            <input
+              type="checkbox"
+              checked={showArchived}
+              onChange={(event) => handleShowArchivedChange(event.target.checked)}
+              className="h-4 w-4 rounded border-white/25 bg-transparent accent-[#d97a5f]"
+            />
+            Show archived
+          </label>
         </div>
       </div>
 
@@ -185,19 +231,25 @@ export default function OrdersExplorer({
               <th className="px-4 py-3 font-medium">Payment</th>
               <th className="px-4 py-3 font-medium">Delivery</th>
               <th className="px-4 py-3 font-medium">Created</th>
-              <th className="px-4 py-3 font-medium">Live site</th>
+              <th className="px-4 py-3 font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((order) => (
-              <tr key={order.id} className="border-b border-white/5 last:border-0 hover:bg-white/5">
+              <tr
+                key={order.id}
+                className={`border-b border-white/5 last:border-0 hover:bg-white/5 ${order.isArchived ? "opacity-50" : ""}`}
+              >
                 <td className="px-4 py-3">
-                  <Link
-                    href={`/admin/orders/${encodeURIComponent(order.slug)}`}
-                    className="font-medium text-[#e8916f] hover:underline"
-                  >
-                    {order.slug}
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/admin/orders/${encodeURIComponent(order.slug)}`}
+                      className="font-medium text-[#e8916f] hover:underline"
+                    >
+                      {order.slug}
+                    </Link>
+                    {order.isArchived && <ArchivedBadge />}
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-gray-100">{order.customerName}</td>
                 <td className="px-4 py-3 text-gray-300">{order.templateName}</td>
@@ -211,14 +263,11 @@ export default function OrdersExplorer({
                   {formatDateTime(new Date(order.createdAt))}
                 </td>
                 <td className="px-4 py-3">
-                  <a
-                    href={`/site/${encodeURIComponent(order.slug)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs font-medium text-[#e8916f] hover:underline"
-                  >
-                    Open live site ↗
-                  </a>
+                  <OrderRowActions
+                    slug={order.slug}
+                    archived={order.isArchived}
+                    onArchivedChange={(isArchived) => handleArchivedChange(order.id, isArchived)}
+                  />
                 </td>
               </tr>
             ))}

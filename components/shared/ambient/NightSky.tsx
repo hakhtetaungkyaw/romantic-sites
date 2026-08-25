@@ -12,6 +12,16 @@ interface NightSkySectionProps {
    *  photoUrl prop — sourced from SiteData.shootingStarWishPhoto (types/
    *  site.ts), a dedicated field independent of SiteData.photos[]. */
   wishPhotoUrl?: string;
+  /** Threaded straight through to interactive/ShootingStarWish.tsx's own
+   *  wishMessage prop — sourced from SiteData.shootingStarWishMessage. That
+   *  component already had this prop (with its own DEFAULT_WISH_MESSAGE
+   *  fallback) but nothing ever passed a value through it before now, so
+   *  every order showed the same generic text regardless of customer data. */
+  wishMessage?: string;
+  /** Overrides this section's own previously-hardcoded CAPTION below —
+   *  optional, falls back to that same default string when unset (see
+   *  DEFAULT_CAPTION). */
+  caption?: string;
 }
 
 interface Star {
@@ -373,7 +383,7 @@ function formatSpecialDate(iso: string): string {
 //   "Every star was already writing our story."
 // Went with the version closest to the brief — it reads more specific and
 // cinematic than the alternatives, and pairs naturally with the date below it.
-const CAPTION = "The sky looked like this, the night it all began.";
+const DEFAULT_CAPTION = "The sky looked like this, the night it all began.";
 
 function StarDot({ star }: { star: Star }) {
   return (
@@ -403,7 +413,12 @@ function StarDot({ star }: { star: Star }) {
   );
 }
 
-export default function NightSkySection({ specialDate, wishPhotoUrl }: NightSkySectionProps) {
+export default function NightSkySection({
+  specialDate,
+  wishPhotoUrl,
+  wishMessage,
+  caption = DEFAULT_CAPTION,
+}: NightSkySectionProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -451,7 +466,7 @@ export default function NightSkySection({ specialDate, wishPhotoUrl }: NightSkyS
           variants={fadeUpVariant}
           className="font-display text-base italic text-[#e8d9c0]/80 sm:text-lg"
         >
-          {CAPTION}
+          {caption}
         </motion.p>
 
         <div className="relative mx-auto mt-10 h-56 w-56 sm:h-72 sm:w-72 md:h-80 md:w-80">
@@ -527,7 +542,7 @@ export default function NightSkySection({ specialDate, wishPhotoUrl }: NightSkyS
           section's own ShootingStars above is purely decorative/frequent
           (2.5-4.5s); ShootingStarWish is the separate, much rarer (15-25s)
           catchable one — distinct components, coexisting on purpose. */}
-      <ShootingStarWish photoUrl={wishPhotoUrl} />
+      <ShootingStarWish photoUrl={wishPhotoUrl} wishMessage={wishMessage} />
     </section>
   );
 }

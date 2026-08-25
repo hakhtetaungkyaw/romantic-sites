@@ -212,3 +212,41 @@ export const dummyBirthdayData: SiteData = {
     birthday: birthdayCustomData,
   },
 };
+
+// Birthday V2 "Spotlight Countdown" — Phase 1 (entrance sequence), Phase 2/3
+// (arcade hub + 3D cake), Phase 5a (gallery photos) all live, see
+// components/birthdayShared/hero/CountdownReveal.tsx and
+// components/birthdayShared/interactive/ArcadeHub.tsx. Single honoree —
+// Birthday V2 matches V1's single-honoree design (people[0].name), not
+// Anniversary's people[] list; see app/admin/_shared/birthdayV2Order.ts's
+// own doc comment on BirthdayV2OrderInput.name. `title`/`message` are only
+// here to satisfy SiteData's own required fields (no built template screen
+// renders them yet); `message` mirrors birthdayV2Message the same way
+// buildBirthdayV2SiteData does for a real order. 8 photos — reuses the same
+// public/demo-assets/photos/couple-NN.jpg files dummySiteData's own gallery
+// draws from (no dedicated Birthday demo photos exist yet, same as
+// dummyBirthdayData's own birthdayMemoryPhotos below) — deliberately above
+// the Phase 5 sphere-gallery threshold (6+) so this preview data exercises
+// the sphere, not the plain-grid fallback, once Phase 5c wires that in.
+const birthdayV2Message =
+  "Happy birthday, Zoe! May this year bring endless laughter, adventure, and cake.";
+
+const birthdayV2GalleryPhotos: SitePhoto[] = [
+  { src: "/demo-assets/photos/couple-02.jpg", caption: "The first candle of the night." },
+  { src: "/demo-assets/photos/couple-04.jpg", caption: "Balloons everywhere, on purpose." },
+  { src: "/demo-assets/photos/couple-06.jpg", caption: "That laugh, mid-cake." },
+  { src: "/demo-assets/photos/couple-08.jpg", caption: "Best surprise reaction yet." },
+  { src: "/demo-assets/photos/couple-10.jpg", caption: "Confetti still finding its way out of pockets." },
+  { src: "/demo-assets/photos/couple-12.jpg", caption: "The whole crew, for once, looking at the camera." },
+  { src: "/demo-assets/photos/couple-13.jpg", caption: "One more slice, we insist." },
+  { src: "/demo-assets/photos/couple-15.jpg", caption: "The wish, right before it was made." },
+];
+
+export const dummyBirthdayV2Data: SiteData = {
+  people: [{ name: "Zoe" }],
+  title: "Zoe's Birthday",
+  message: birthdayV2Message,
+  specialDate: "2010-04-12T00:00:00.000Z",
+  photos: birthdayV2GalleryPhotos,
+  birthdayV2Message,
+};

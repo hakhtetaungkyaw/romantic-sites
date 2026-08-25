@@ -31,7 +31,20 @@ interface GoldenSkySectionProps {
   people: SitePerson[];
   groupTitle?: string;
   specialDate: string;
-  photos: SitePhoto[];
+  /** Overrides for this section's own previously-hardcoded LOVE_NOTE/CAPTION
+   *  copy below — optional, each falls back to that same default string
+   *  when unset (see the DEFAULT_ constants). */
+  caption?: string;
+  loveNote?: string;
+  /** This section's own standalone accent photo (SiteData.goldenSkyPhoto) —
+   *  a single URL, deliberately NOT derived from photos[0] anymore (see
+   *  that field's own doc comment in types/site.ts for why: it used to be
+   *  photos[0], which meant this section's accent photo was never actually
+   *  independent from the gallery's own first entry). Optional — when
+   *  unset, the accent-photo slot below simply doesn't render (same
+   *  `accentPhoto &&` conditional as before), it does NOT fall back to any
+   *  gallery photo. */
+  photo?: string;
 }
 
 // Deterministic PRNG (mulberry32) — same fixed seed always produces the same
@@ -528,7 +541,7 @@ function PetalDrift() {
 // Went with the line below: one unbroken sentence, all three motifs present
 // (sunflower/sun turning, butterfly finding its bloom), landing on direct
 // address like CAPTION's "so did we" does.
-const LOVE_NOTE = "A sunflower turns for the sun, a butterfly finds its bloom — I was always going to find my way to you.";
+const DEFAULT_LOVE_NOTE = "A sunflower turns for the sun, a butterfly finds its bloom — I was always going to find my way to you.";
 
 // Shared fixed width for both flanking pieces (text block and photo) — the
 // exact same value on both sides is what makes them read as one balanced
@@ -538,10 +551,10 @@ const LOVE_NOTE = "A sunflower turns for the sun, a butterfly finds its bloom �
 // return below, well past any width where 78vw would actually bind).
 const ROW_ITEM_WIDTH = "w-[260px] max-w-[78vw]";
 
-function LoveNoteAccent() {
+function LoveNoteAccent({ loveNote }: { loveNote: string }) {
   return (
     <p className={`font-display mx-auto text-center text-sm italic leading-snug text-[#6b4332]/85 sm:text-base ${ROW_ITEM_WIDTH}`}>
-      {LOVE_NOTE}
+      {loveNote}
     </p>
   );
 }
@@ -648,7 +661,7 @@ function formatSpecialDate(iso: string): string {
 // golden-hour freeze-frame, and it mirrors NightSky's caption cadence
 // ("The sky looked like this...") for consistency between the two
 // templates' "wow" sections.
-const CAPTION = "The sky held its breath, and so did we.";
+const DEFAULT_CAPTION = "The sky held its breath, and so did we.";
 
 // This section has no background of its own — every V1 section's own
 // background is transparent, and templates/AnniversaryV1.tsx paints
@@ -679,8 +692,15 @@ const CAPTION = "The sky held its breath, and so did we.";
 // been redundant. FieldGlowPool stays: it's part of the sun/light-ray
 // effect (the warm pool the rays visually "land" in), not the field
 // itself, so it's unaffected by the field's removal.
-export default function GoldenSkySection({ people, groupTitle, specialDate, photos }: GoldenSkySectionProps) {
-  const accentPhoto = photos[0];
+export default function GoldenSkySection({
+  people,
+  groupTitle,
+  specialDate,
+  caption = DEFAULT_CAPTION,
+  loveNote = DEFAULT_LOVE_NOTE,
+  photo,
+}: GoldenSkySectionProps) {
+  const accentPhoto: SitePhoto | undefined = photo ? { src: photo } : undefined;
   const heading = formatPeopleHeading(people, groupTitle);
 
   return (
@@ -740,7 +760,7 @@ export default function GoldenSkySection({ people, groupTitle, specialDate, phot
           variants={fadeUpVariant}
           className="font-display mt-4 max-w-lg text-base italic text-[#4a2f26]/80 sm:text-lg"
         >
-          {CAPTION}
+          {caption}
         </motion.p>
 
         {/* The row: stacked (flex-col) below lg so three ~260-280px-wide
@@ -761,7 +781,7 @@ export default function GoldenSkySection({ people, groupTitle, specialDate, phot
             where within the Lottie's own bounding box the bloom sits. */}
         <div className="mt-10 flex w-full flex-col items-center gap-8 lg:flex-row lg:items-center lg:justify-center lg:gap-10">
           <motion.div variants={fadeUpVariant} className="flex justify-center lg:-mt-12">
-            <LoveNoteAccent />
+            <LoveNoteAccent loveNote={loveNote} />
           </motion.div>
 
           <SunflowerCenterpiece />

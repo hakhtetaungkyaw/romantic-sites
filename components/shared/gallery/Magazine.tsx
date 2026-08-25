@@ -2,7 +2,6 @@
 
 import { AnimatePresence, motion, useInView } from "framer-motion";
 import { ChevronDown } from "lucide-react";
-import Image from "next/image";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
@@ -13,37 +12,24 @@ interface MemoryGalleryProps {
   photos: SitePhoto[];
 }
 
-// Real pixel dimensions of the demo photo set (measured, not guessed), so each
-// framed piece keeps its true aspect ratio instead of a forced crop — and so
-// the lightbox below can size its enlarged image via real width/height
-// instead of a fixed box, which is what actually avoids pillarboxing a
-// portrait photo inside a landscape-shaped container.
-// Falls back to a generic portrait ratio for any photo not in this set.
-const PHOTO_DIMENSIONS: Record<string, { width: number; height: number }> = {
-  "couple-01.jpg": { width: 436, height: 236 },
-  "couple-02.jpg": { width: 100, height: 106 },
-  "couple-03.jpg": { width: 136, height: 136 },
-  "couple-04.jpg": { width: 136, height: 136 },
-  "couple-05.jpg": { width: 136, height: 136 },
-  "couple-06.jpg": { width: 136, height: 136 },
-  "couple-07.jpg": { width: 136, height: 136 },
-  "couple-08.jpg": { width: 136, height: 136 },
-  "couple-09.jpg": { width: 136, height: 136 },
-  "couple-10.jpg": { width: 136, height: 136 },
-  "couple-11.jpg": { width: 136, height: 136 },
-  "couple-12.jpg": { width: 136, height: 136 },
-  "couple-13.jpg": { width: 136, height: 136 },
-  "couple-14.jpg": { width: 136, height: 136 },
-  "couple-15.jpg": { width: 136, height: 136 },
-  "couple-16.jpg": { width: 136, height: 136 },
-};
-
-const DEFAULT_DIMENSIONS = { width: 10, height: 5 };
-
-function getDimensions(src: string) {
-  const filename = src.split("/").pop() ?? "";
-  return PHOTO_DIMENSIONS[filename] ?? DEFAULT_DIMENSIONS;
-}
+// BUG FIX: this file used to look up each photo's aspect ratio from a
+// hardcoded map of 16 demo filenames (couple-01.jpg...couple-16.jpg),
+// falling back to a 10:5 default for anything else — meaning every real
+// customer photo (a unique hosted URL, never literally named "couple-01.jpg")
+// silently hit that fallback. Unlike V1's gallery/SunlitPolaroids.tsx (a grid
+// of uniformly cropped squares, fixed by giving every card ONE fixed frame +
+// object-cover), this gallery's whole design is a single full-bleed photo per
+// slide shown via object-contain at its own true, uncropped aspect ratio —
+// forcing a fixed crop frame here would be a real design change, not a bug
+// fix, and would fight the existing "one real memory genuinely dominates the
+// slide" intent documented throughout this file. So both photo instances
+// (this slide's frame and the lightbox's enlarged view below) switch from
+// next/image (which needs real width/height once `fill` isn't used) to a
+// plain <img>, sized purely via the same CSS max-h/max-w caps already
+// present — the browser reads the real file's own dimensions, so no
+// dimension source is needed at all. Same technique already used by V1's own
+// lightbox fix (gallery/SunlitPolaroids.tsx) and by the admin thumbnail grid
+// (app/admin/orders/[slug]/page.tsx).
 
 // ---- Ambient night-sky texture — own local reimplementation of
 // ambient/NightSky.tsx's star-rendering approach (same mulberry32 PRNG
@@ -278,12 +264,11 @@ interface LightboxProps {
 //     body alone still leaves the page scrollable. Locked in its own effect
 //     with an empty dependency array, so it toggles exactly once on
 //     mount/unmount rather than re-toggling on every photo navigation.
-//   - The enlarged image is sized via its real width/height (getDimensions
-//     above) inside a content-sized wrapper with `overflow-hidden` as a
-//     safety net only, not a fixed box — that's what lets a portrait photo's
-//     frame hug its actual shape instead of pillarboxing.
-// Completely untouched by this pass — still opens exactly the same way,
-// from any slide's photo.
+//   - The enlarged image is a plain <img> (see the BUG FIX comment near the
+//     top of this file) inside a content-sized wrapper with `overflow-hidden`
+//     as a safety net only, not a fixed box — that's what lets a portrait
+//     photo's frame hug its actual shape instead of pillarboxing.
+// Still opens exactly the same way, from any slide's photo.
 function Lightbox({ photos, index, onClose, onNavigate }: LightboxProps) {
   const isMounted = useSyncExternalStore(noopSubscribe, () => true, () => false);
   const photo = photos[index];
@@ -312,8 +297,6 @@ function Lightbox({ photos, index, onClose, onNavigate }: LightboxProps) {
   }, [index]);
 
   if (!isMounted || !photo) return null;
-
-  const { width: photoWidth, height: photoHeight } = getDimensions(photo.src);
 
   return createPortal(
     <AnimatePresence>
@@ -390,12 +373,12 @@ function Lightbox({ photos, index, onClose, onNavigate }: LightboxProps) {
             <CornerOrnament position="bl" />
             <CornerOrnament position="br" />
             <div className="flex flex-col items-center rounded-[4px] bg-gradient-to-br from-[#f7ecd2] to-[#ecdab0] p-3 pb-5 shadow-inner shadow-black/10 sm:p-4 sm:pb-6">
-              <Image
+              {/* Plain <img>, not next/image — see the BUG FIX comment near
+                  the top of this file. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src={photo.src}
                 alt={photo.caption ?? "Enlarged memory"}
-                width={photoWidth}
-                height={photoHeight}
-                sizes="(max-width: 768px) 85vw, 900px"
                 className="block h-auto max-h-[58vh] w-auto max-w-[82vw] rounded-sm object-contain sm:max-h-[62vh]"
               />
 
@@ -483,7 +466,6 @@ interface GallerySlideProps {
 // means in practice here.
 function GallerySlide({ photo, index, isLast, onOpen }: GallerySlideProps) {
   const { src, caption } = photo;
-  const { width, height } = getDimensions(src);
   const isReversed = index % 2 === 1;
 
   const slideRef = useRef<HTMLDivElement>(null);
@@ -571,13 +553,13 @@ function GallerySlide({ photo, index, isLast, onOpen }: GallerySlideProps) {
                 a wider max-width (54vw, up from 42vw; lg cap raised from
                 520px to 760px) matching the column's new 62% share.
                 object-contain resolves whichever bound (height or width)
-                actually binds for a given photo's own aspect ratio. */}
-            <Image
+                actually binds for a given photo's own aspect ratio. Plain
+                <img>, not next/image — see the BUG FIX comment near the top
+                of this file. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={src}
               alt={`Memory ${index + 1}`}
-              width={width}
-              height={height}
-              sizes="(max-width: 767px) 88vw, 54vw"
               className="block h-auto max-h-[58vh] w-auto max-w-[88vw] rounded-sm object-contain transition-transform duration-500 ease-out group-hover:scale-[1.02] md:max-h-[92vh] md:max-w-[54vw] lg:max-w-[760px]"
             />
           </div>

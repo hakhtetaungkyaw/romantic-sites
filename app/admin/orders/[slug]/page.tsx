@@ -5,7 +5,8 @@ import { prisma, withRetry } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
 import type { SitePerson, SitePhoto, SiteVideo, SiteSong, SiteData } from "@/types/site";
 
-import { DeliveryStatusBadge, PaymentStatusBadge } from "../StatusBadge";
+import ArchiveOrderButton from "./ArchiveOrderButton";
+import OrderStatusEditor from "./OrderStatusEditor";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -68,7 +69,10 @@ export default async function AdminOrderDetailPage({
             <h1 className="font-display mt-2 text-3xl text-white">{order.slug}</h1>
           </div>
           <div className="flex items-center gap-2">
-            {order.template.componentKey === "birthday-v1" && (
+            {(order.template.componentKey === "birthday-v1" ||
+              order.template.componentKey === "birthday-v2" ||
+              order.template.componentKey === "anniversary-v1" ||
+              order.template.componentKey === "anniversary-v2") && (
               <Link
                 href={`/admin/orders/${encodeURIComponent(order.slug)}/edit`}
                 className="rounded-full bg-gradient-to-b from-[#e8916f] to-[#c05e3d] px-4 py-2 text-sm font-medium text-white shadow-sm shadow-black/30"
@@ -84,6 +88,7 @@ export default async function AdminOrderDetailPage({
             >
               Open live site ↗
             </a>
+            <ArchiveOrderButton slug={order.slug} initialArchived={order.isArchived} />
           </div>
         </div>
 
@@ -205,12 +210,11 @@ export default async function AdminOrderDetailPage({
 
         <Section title="Status">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Payment status">
-              <PaymentStatusBadge status={order.paymentStatus} />
-            </Field>
-            <Field label="Delivery status">
-              <DeliveryStatusBadge status={order.deliveryStatus} />
-            </Field>
+            <OrderStatusEditor
+              slug={order.slug}
+              initialPaymentStatus={order.paymentStatus}
+              initialDeliveryStatus={order.deliveryStatus}
+            />
             <Field label="Payment proof">
               {order.paymentProofUrl ? (
                 <a href={order.paymentProofUrl} target="_blank" rel="noreferrer" className="text-[#e8916f] hover:underline">

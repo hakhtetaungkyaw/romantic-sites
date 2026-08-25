@@ -37,7 +37,21 @@ interface AnniversaryV1Props {
 // the gallery lightbox, the timeline's own scroll-progress line) are
 // unrelated to this and render on top of it exactly as before.
 export default function AnniversaryV1({ data }: AnniversaryV1Props) {
-  const { people, groupTitle, title, message, specialDate, photos, closingLine, milestones, songs, secretNote } = data;
+  const {
+    people,
+    groupTitle,
+    title,
+    message,
+    specialDate,
+    photos,
+    closingLine,
+    milestones,
+    songs,
+    secretNote,
+    goldenSkyCaption,
+    goldenSkyLoveNote,
+    goldenSkyPhoto,
+  } = data;
   const song = songs?.[0];
 
   return (
@@ -47,7 +61,14 @@ export default function AnniversaryV1({ data }: AnniversaryV1Props) {
         style={{ background: V1_BACKGROUND_GRADIENT }}
       >
         <GiftBoxUnlock people={people} groupTitle={groupTitle}>
-          <GoldenSkySection people={people} groupTitle={groupTitle} specialDate={specialDate} photos={photos} />
+          <GoldenSkySection
+            people={people}
+            groupTitle={groupTitle}
+            specialDate={specialDate}
+            caption={goldenSkyCaption}
+            loveNote={goldenSkyLoveNote}
+            photo={goldenSkyPhoto}
+          />
           <SunsetHero people={people} groupTitle={groupTitle} title={title} />
 
           <SealedLetter message={message} />

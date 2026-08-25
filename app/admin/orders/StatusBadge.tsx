@@ -31,3 +31,11 @@ export function DeliveryStatusBadge({ status }: { status: string }) {
     </span>
   );
 }
+
+export function ArchivedBadge() {
+  return (
+    <span className="inline-block rounded-full border border-gray-500/30 bg-gray-500/15 px-2.5 py-0.5 text-xs font-medium text-gray-300">
+      Archived
+    </span>
+  );
+}

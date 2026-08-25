@@ -22,24 +22,77 @@ interface SunflowerCountdownProps {
 }
 
 interface Elapsed {
+  years: number;
+  months: number;
   days: number;
   hours: number;
   minutes: number;
   seconds: number;
 }
 
-const ZERO_ELAPSED: Elapsed = { days: 0, hours: 0, minutes: 0, seconds: 0 };
+const ZERO_ELAPSED: Elapsed = { years: 0, months: 0, days: 0, hours: 0, minutes: 0, seconds: 0 };
 
+// BUG FIX: this used to be pure fixed-duration math (days = floor(totalSeconds
+// / 86400), no larger units at all) — correct as a raw duration, but not
+// what an anniversary countdown should read as ("1165 days" instead of
+// "3 years, 2 months, 8 days"). Years and months are calendar concepts
+// (variable month lengths, leap years), so they can't come from the same
+// division-and-modulo math that works for days/hours/minutes/seconds — this
+// walks forward by calendar units using native Date arithmetic instead (no
+// new dependency: no date library is installed in this project, and none is
+// needed for this). UTC throughout for both `start` and `now`, same reason
+// ambient/GoldenSkySection.tsx's own formatSpecialDate is UTC-only: keeps
+// server render and client hydration in agreement regardless of the
+// visitor's local timezone.
+//
+// The Y/M/D breakdown is a subtraction-based walk (years, then months, then
+// borrow days from the previous calendar month if the day-of-month went
+// negative) — a well-established hand-rolled pattern for this exact
+// problem, not a from-scratch invention. It won't byte-for-byte match every
+// edge case a full calendar-diff library (date-fns' intervalToDuration,
+// etc.) would produce for month-end dates (e.g. Jan 31 -> Feb 28 boundary
+// ambiguity), but it's directionally correct and self-consistent, which is
+// what a romantic "time together" display needs — not calendar-library
+// precision.
+//
+// hours/minutes/seconds stay simple remainder math (no calendar ambiguity
+// within a single day) — this is now "how far into the current day-cycle
+// since the special date/time are we," ticking every second exactly like
+// before, just demoted to Tier 2's own smaller/lighter display instead of
+// matching Tier 1's card styling (see the component's own return below).
 function getElapsed(specialDate: string): Elapsed {
-  const diff = Math.max(0, Date.now() - new Date(specialDate).getTime());
+  const start = new Date(specialDate);
+  const now = new Date();
+  const diffMs = Math.max(0, now.getTime() - start.getTime());
 
-  const totalSeconds = Math.floor(diff / 1000);
-  const days = Math.floor(totalSeconds / 86400);
+  let years = 0;
+  let months = 0;
+  let days = 0;
+
+  if (diffMs > 0) {
+    years = now.getUTCFullYear() - start.getUTCFullYear();
+    months = now.getUTCMonth() - start.getUTCMonth();
+    days = now.getUTCDate() - start.getUTCDate();
+
+    if (days < 0) {
+      months -= 1;
+      // Days in the calendar month immediately before `now`'s current
+      // month — date 0 of a given month/year resolves to the last day of
+      // the previous one.
+      days += new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0)).getUTCDate();
+    }
+    if (months < 0) {
+      years -= 1;
+      months += 12;
+    }
+  }
+
+  const totalSeconds = Math.floor(diffMs / 1000);
   const hours = Math.floor((totalSeconds % 86400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
 
-  return { days, hours, minutes, seconds };
+  return { years, months, days, hours, minutes, seconds };
 }
 
 function subscribe(callback: () => void) {
@@ -114,7 +167,7 @@ const VINE_COLOR = "#7d8c5a";
 // timeline/SunsetTimeline.tsx's own vineLeafPath (both files already used
 // this exact formula; the "blob" look reported against this file's version
 // wasn't a different/wrong shape, it was this SVG's own
-// preserveAspectRatio="none" stretch below — see VineConnector's comment).
+// preserveAspectRatio="none" stretch below — see Vine's own comment).
 // `length`/`width` are the leaf's own size before the caller's
 // translate+rotate places it along the vine.
 function vineLeafPath(length: number, width: number): string {
@@ -171,22 +224,30 @@ const VINE_LEAVES = [
 // shape renders undistorted regardless of the row's actual width — same
 // fix timeline/SunsetTimeline.tsx's vertical vine never needed, since that
 // one's SVG maps 1:1 to real pixels with no stretching at all.
-function VineConnectorDesktop() {
+//
+// BUG 6 SIMPLIFICATION: this used to be two variants — this single-row
+// version for sm:+ only, plus a separate VineConnectorMobile 2x2-bracket
+// shape for <sm, needed because 4 cards' combined width (332px) exceeded a
+// narrow phone's available row width and wrapped into two rows. Tier 1 now
+// shows at most 3 cards (Years/Months/Days — Hours/Minutes/Seconds moved to
+// Tier 2 below), and 3 cards' combined width (74*3 + gap*2 = 246px) fits
+// on one line even at a 320px-wide viewport after the section's own px-6
+// padding (272px available) — so the row never wraps at any breakpoint
+// anymore, and the 2x2-bracket variant (and its own separate path/leaf
+// data) is no longer needed at all. One `w-full`, non-uniformly-stretched
+// (`preserveAspectRatio="none"`) vine now covers every breakpoint and every
+// Tier 1 card count (2 or 3).
+function Vine() {
   return (
-    // sm: and up only (see VineConnectorMobile below for <sm) — this is the
-    // single-row horizontal vine, correct only when all 4 cards actually
-    // fit on one line (sm:w-20 x4 + sm:gap-5 x3 = 380px, well under any sm+
-    // viewport).
     // motion.div (not a plain div) + variants={fadeUpVariant}, no own
-    // initial/whileInView — this now sits inside SunflowerCountdown's
-    // shared staggerContainerVariant group (see the default export below),
+    // initial/whileInView — this sits inside SunflowerCountdown's shared
+    // staggerContainerVariant group (see the default export below),
     // inheriting hidden/visible propagation from that ancestor rather than
-    // animating on its own. Everything else here (className, the SVGs
-    // inside) is unchanged.
+    // animating on its own.
     <motion.div
       aria-hidden="true"
       variants={fadeUpVariant}
-      className="pointer-events-none absolute left-0 top-1/2 hidden h-10 w-full -translate-y-1/2 opacity-70 sm:block"
+      className="pointer-events-none absolute left-0 top-1/2 h-10 w-full -translate-y-1/2 opacity-70"
     >
       <svg
         viewBox="0 0 200 40"
@@ -212,92 +273,6 @@ function VineConnectorDesktop() {
         </svg>
       ))}
     </motion.div>
-  );
-}
-
-// Below sm:, the row's `flex-wrap` reflows the 4 cards into a 2x2 grid
-// (w-[74px] x4 + gap-3 x3 = 332px, wider than a ~327px-narrow-phone's
-// available row width) — a single horizontal line has nothing to run
-// through in that arrangement. This reshapes the SAME vine (identical
-// VINE_COLOR, strokeWidth, and vineLeafPath() construction as
-// VineConnectorDesktop above) into a bracket/S-curve that threads across
-// the top row, curls down the right side, then back across the bottom row —
-// touching all 4 card positions in their actual 2x2 spots instead of
-// floating through the middle of both rows.
-//
-// Sizing: both wrapped rows are the same width (2 x 74px cards + one 12px
-// gap-3 = 160px) and both get centered independently by the row's own
-// `justify-center` — so a container fixed at exactly that same 160px width
-// and centered the same way (`left-1/2 -translate-x-1/2`) lines up with the
-// card cluster exactly, at 375px/390px/414px/anything else alike, without
-// needing to read the cards' real rendered position at runtime. Height is
-// the one dimension that can't be hardcoded (card height depends on
-// content), so the container uses `inset-y-0` instead of a fixed h-*  — an
-// absolutely positioned box with both `top` and `bottom` set stretches to
-// exactly match its containing block's real auto-computed height (here,
-// the row div's own height, i.e. both wrapped rows + the row-gap between
-// them). The path/leaf viewBox below is 0-160 horizontally (mapping 1:1 to
-// that fixed 160px, no stretch) and 0-100 vertically (mapping to
-// whatever that real height turns out to be) — so viewBox y=25 always lands
-// at 25% down the ACTUAL box, same value a leaf's own `top: 25%` would
-// resolve to, keeping the path and its leaves aligned regardless of how
-// tall the cards render.
-const VINE_PATH_MOBILE =
-  "M10,25 C25,17 40,33 55,25 C70,17 90,33 105,25 C120,17 135,20 150,25 C158,35 158,65 150,75 C135,83 120,67 105,75 C90,83 70,67 55,75 C40,83 25,67 10,75";
-const VINE_LEAVES_MOBILE = [
-  { x: 20, y: 18, angle: -35 },
-  { x: 55, y: 30, angle: 35 },
-  { x: 105, y: 18, angle: -35 },
-  { x: 140, y: 30, angle: 35 },
-  { x: 140, y: 70, angle: 35 },
-  { x: 105, y: 82, angle: -35 },
-  { x: 55, y: 70, angle: 35 },
-  { x: 20, y: 82, angle: -35 },
-];
-const VINE_MOBILE_WIDTH = 160;
-
-function VineConnectorMobile() {
-  return (
-    // Same motion.div + inherited variants={fadeUpVariant} treatment as
-    // VineConnectorDesktop above, for the same reason.
-    <motion.div
-      aria-hidden="true"
-      variants={fadeUpVariant}
-      className="pointer-events-none absolute inset-y-0 left-1/2 w-[160px] -translate-x-1/2 opacity-70 sm:hidden"
-    >
-      <svg
-        viewBox={`0 0 ${VINE_MOBILE_WIDTH} 100`}
-        preserveAspectRatio="none"
-        className="absolute inset-0 h-full w-full"
-      >
-        <path d={VINE_PATH_MOBILE} fill="none" stroke={VINE_COLOR} strokeWidth={2} strokeLinecap="round" />
-      </svg>
-      {VINE_LEAVES_MOBILE.map((leaf, i) => (
-        <svg
-          key={i}
-          viewBox="0 0 28 28"
-          width={28}
-          height={28}
-          className="absolute -translate-x-1/2 -translate-y-1/2"
-          style={{ left: `${(leaf.x / VINE_MOBILE_WIDTH) * 100}%`, top: `${leaf.y}%` }}
-        >
-          <path
-            d={vineLeafPath(13, 8)}
-            fill={VINE_COLOR}
-            transform={`translate(14 20) rotate(${leaf.angle})`}
-          />
-        </svg>
-      ))}
-    </motion.div>
-  );
-}
-
-function VineConnector() {
-  return (
-    <>
-      <VineConnectorDesktop />
-      <VineConnectorMobile />
-    </>
   );
 }
 
@@ -391,6 +366,8 @@ export default function SunflowerCountdown({
       const next = getElapsed(specialDate);
       const prev = cacheRef.current;
       if (
+        prev.years === next.years &&
+        prev.months === next.months &&
         prev.days === next.days &&
         prev.hours === next.hours &&
         prev.minutes === next.minutes &&
@@ -404,12 +381,28 @@ export default function SunflowerCountdown({
     () => ZERO_ELAPSED,
   );
 
-  const units: { value: number; label: string }[] = [
-    { value: elapsed.days, label: "Days" },
-    { value: elapsed.hours, label: "Hours" },
-    { value: elapsed.minutes, label: "Minutes" },
-    { value: elapsed.seconds, label: "Seconds" },
-  ];
+  // Tier 1 (see the return below): Years/Months/Days as the primary,
+  // card-styled row — Years only shown once it's actually non-zero (a
+  // "0 Years" card reads as noise for a couple not yet at their first
+  // anniversary), Months and Days always shown regardless of their own
+  // value. So this is always either 2 or 3 cards, never fewer — Vine above
+  // is written to stretch correctly across either count (see its own
+  // comment).
+  const tier1Units: { value: number; label: string }[] =
+    elapsed.years > 0
+      ? [
+          { value: elapsed.years, label: "Years" },
+          { value: elapsed.months, label: "Months" },
+          { value: elapsed.days, label: "Days" },
+        ]
+      : [
+          { value: elapsed.months, label: "Months" },
+          { value: elapsed.days, label: "Days" },
+        ];
+
+  const timeOfDay = [elapsed.hours, elapsed.minutes, elapsed.seconds]
+    .map((n) => String(n).padStart(2, "0"))
+    .join(":");
 
   return (
     <section className="px-6 py-[120px] text-center">
@@ -438,8 +431,8 @@ export default function SunflowerCountdown({
         </motion.p>
 
         <div className="relative mt-6 flex flex-wrap justify-center gap-3 sm:gap-5">
-          <VineConnector />
-          {units.map((unit) => (
+          <Vine />
+          {tier1Units.map((unit) => (
             <motion.div
               key={unit.label}
               variants={fadeUpVariant}
@@ -479,6 +472,22 @@ export default function SunflowerCountdown({
             </motion.div>
           ))}
         </div>
+
+        {/* Tier 2 — Hours:Minutes:Seconds, deliberately subordinate to Tier
+            1's cards above: a single live-ticking inline string, not 3
+            more card tiles (which would've pushed the vine back to needing
+            5-6-card support). Keeps the "time is always moving, and so are
+            we" feeling the original single-row design had, without
+            competing with Years/Months/Days for visual weight — smaller
+            text, muted color, plain tabular digits with no per-tick pop
+            animation (that flourish stays reserved for Tier 1's own
+            digits). */}
+        <motion.p
+          variants={fadeUpVariant}
+          className="mt-5 font-display text-sm tracking-[0.15em] text-[#4a2f26]/45"
+        >
+          {timeOfDay}
+        </motion.p>
       </motion.div>
     </section>
   );

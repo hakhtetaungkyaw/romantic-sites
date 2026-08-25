@@ -25,26 +25,29 @@ export function useV1InViewport<T extends Element = HTMLDivElement>(
   rootMargin = "100px",
 ): { ref: RefObject<T | null>; isInView: boolean } {
   const ref = useRef<T | null>(null);
-  // Starts false (not "assume visible") — for anything below the fold at
-  // mount, this means playback genuinely never starts until the observer's
-  // first callback actually confirms it's on screen, rather than briefly
-  // autoplaying and then correcting a frame later. Above-the-fold content
-  // catches up as soon as the observer's first (essentially immediate)
-  // callback fires.
-  const [isInView, setIsInView] = useState(false);
+  // Starts false in the real (IntersectionObserver-supported) case — for
+  // anything below the fold at mount, this means playback genuinely never
+  // starts until the observer's first callback actually confirms it's on
+  // screen, rather than briefly autoplaying and then correcting a frame
+  // later. Above-the-fold content catches up as soon as the observer's
+  // first (essentially immediate) callback fires.
+  //
+  // The lazy initializer's `typeof IntersectionObserver === "undefined"`
+  // check only matters for the defensive no-IntersectionObserver fallback
+  // below — computed here instead of via a synchronous setState call inside
+  // the effect, which is what react-hooks/set-state-in-effect flags. That
+  // branch shouldn't be reachable in practice (every consumer is a
+  // "use client" component that only runs this hook once mounted in a real
+  // browser), so this is a lint-satisfying restructure, not a behavior
+  // change.
+  const [isInView, setIsInView] = useState(
+    () => typeof IntersectionObserver === "undefined",
+  );
 
   useEffect(() => {
     const node = ref.current;
     if (!node) return;
-
-    // Defensive only — every consumer of this hook is a "use client"
-    // component that only ever runs in the browser once mounted, so this
-    // branch shouldn't be reachable in practice; it just avoids assuming
-    // IntersectionObserver exists rather than crashing if it somehow isn't.
-    if (typeof IntersectionObserver === "undefined") {
-      setIsInView(true);
-      return;
-    }
+    if (typeof IntersectionObserver === "undefined") return;
 
     const observer = new IntersectionObserver(
       ([entry]) => setIsInView(entry.isIntersecting),

@@ -43,6 +43,8 @@ export default function AnniversaryV2({ data }: AnniversaryV2Props) {
     secretNote,
     places,
     typedPhrases,
+    nightSkyCaption,
+    shootingStarWishMessage,
   } = data;
 
   const heroVideo = videos?.find((video) => video.role === "hero");
@@ -99,7 +101,12 @@ export default function AnniversaryV2({ data }: AnniversaryV2Props) {
 
             <LetterCard message={message} />
 
-            <NightSky specialDate={specialDate} wishPhotoUrl={shootingStarWishPhoto} />
+            <NightSky
+              specialDate={specialDate}
+              wishPhotoUrl={shootingStarWishPhoto}
+              wishMessage={shootingStarWishMessage}
+              caption={nightSkyCaption}
+            />
 
             <Magazine photos={photos} />
 

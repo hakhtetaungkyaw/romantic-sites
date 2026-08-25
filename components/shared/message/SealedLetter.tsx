@@ -871,6 +871,22 @@ export default function SealedLetter({ message }: SealedLetterProps) {
                         <TypewriterText text={message} />
                       </motion.div>
 
+                      {/* Clears the closing quote mark below: that glyph is
+                          `absolute bottom-0`, which pins it to this
+                          scrollable card's own frame — NOT to the bottom of
+                          the (possibly taller, for a long message)
+                          scrollable content — so it stays glued to the
+                          bottom-right corner of whatever is currently
+                          visible, at any scroll position. Without this
+                          spacer, a long message's final line(s) scroll up
+                          into exactly that pinned corner and read as
+                          overlapped/cut off even though they're technically
+                          still in the DOM. Sized to clear the glyph's own
+                          ~96-128px (text-8xl/9xl, leading-none) footprint
+                          with margin, so the true last line always clears
+                          the occluded zone before the scroll boundary. */}
+                      <div aria-hidden="true" className="h-24 sm:h-32" />
+
                       <span
                         aria-hidden="true"
                         className="font-display pointer-events-none absolute bottom-0 right-4 overflow-hidden select-none text-8xl leading-none text-[#c9a68a]/30 sm:right-6 sm:text-9xl"

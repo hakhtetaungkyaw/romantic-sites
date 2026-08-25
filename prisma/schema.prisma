@@ -45,6 +45,7 @@ model Order {
   paymentStatus   String   @default("pending") // pending | verified | rejected
   paymentProofUrl String?
   deliveryStatus  String   @default("pending") // pending | in_progress | delivered
+  isArchived      Boolean  @default(false) // soft-delete: hides the order from the default admin list and the live /site/[slug] experience without deleting any data — matches Template.isActive's own plain-boolean style rather than a paymentStatus/deliveryStatus-style string enum, since this is a genuine on/off flag, not a multi-value status
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }

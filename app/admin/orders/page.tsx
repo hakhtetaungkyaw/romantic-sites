@@ -17,6 +17,7 @@ export default async function AdminOrdersPage({
   const initialPayment = firstParam(params.payment) || "all";
   const initialDelivery = firstParam(params.delivery) || "all";
   const initialQ = firstParam(params.q).trim();
+  const initialShowArchived = firstParam(params.archived) === "1";
 
   // Fetched once, unfiltered — OrdersExplorer (client) does every
   // category/status/search filter itself against this array in memory, so
@@ -38,6 +39,7 @@ export default async function AdminOrdersPage({
     templateCategory: order.template.category,
     paymentStatus: order.paymentStatus,
     deliveryStatus: order.deliveryStatus,
+    isArchived: order.isArchived,
     createdAt: order.createdAt.toISOString(),
   }));
 
@@ -58,6 +60,7 @@ export default async function AdminOrdersPage({
           initialPayment={initialPayment}
           initialDelivery={initialDelivery}
           initialQ={initialQ}
+          initialShowArchived={initialShowArchived}
         />
       </div>
     </main>

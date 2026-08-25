@@ -11,24 +11,54 @@ interface ElegantCountdownProps {
 }
 
 interface Elapsed {
+  years: number;
+  months: number;
   days: number;
   hours: number;
   minutes: number;
   seconds: number;
 }
 
-const ZERO_ELAPSED: Elapsed = { days: 0, hours: 0, minutes: 0, seconds: 0 };
+const ZERO_ELAPSED: Elapsed = { years: 0, months: 0, days: 0, hours: 0, minutes: 0, seconds: 0 };
 
+// BUG FIX: this used to be pure fixed-duration math (days = floor(totalSeconds
+// / 86400), no larger units at all) — same bug already fixed in V1's
+// countdown/SunflowerCountdown.tsx, see that file's own comment for the full
+// reasoning. Years/months are calendar concepts (variable month lengths, leap
+// years), so they're walked forward with native Date arithmetic (no new
+// dependency — none is installed or needed) rather than division/modulo.
+// UTC throughout so server render and client hydration agree regardless of
+// the visitor's local timezone.
 function getElapsed(specialDate: string): Elapsed {
-  const diff = Math.max(0, Date.now() - new Date(specialDate).getTime());
+  const start = new Date(specialDate);
+  const now = new Date();
+  const diffMs = Math.max(0, now.getTime() - start.getTime());
 
-  const totalSeconds = Math.floor(diff / 1000);
-  const days = Math.floor(totalSeconds / 86400);
+  let years = 0;
+  let months = 0;
+  let days = 0;
+
+  if (diffMs > 0) {
+    years = now.getUTCFullYear() - start.getUTCFullYear();
+    months = now.getUTCMonth() - start.getUTCMonth();
+    days = now.getUTCDate() - start.getUTCDate();
+
+    if (days < 0) {
+      months -= 1;
+      days += new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0)).getUTCDate();
+    }
+    if (months < 0) {
+      years -= 1;
+      months += 12;
+    }
+  }
+
+  const totalSeconds = Math.floor(diffMs / 1000);
   const hours = Math.floor((totalSeconds % 86400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
 
-  return { days, hours, minutes, seconds };
+  return { years, months, days, hours, minutes, seconds };
 }
 
 function subscribe(callback: () => void) {
@@ -50,6 +80,8 @@ export default function ElegantCountdown({
       const next = getElapsed(specialDate);
       const prev = cacheRef.current;
       if (
+        prev.years === next.years &&
+        prev.months === next.months &&
         prev.days === next.days &&
         prev.hours === next.hours &&
         prev.minutes === next.minutes &&
@@ -63,12 +95,25 @@ export default function ElegantCountdown({
     () => ZERO_ELAPSED,
   );
 
-  const units: { value: number; label: string }[] = [
-    { value: elapsed.days, label: "Days" },
-    { value: elapsed.hours, label: "Hours" },
-    { value: elapsed.minutes, label: "Minutes" },
-    { value: elapsed.seconds, label: "Seconds" },
-  ];
+  // Tier 1: Years/Months/Days as the primary card row — Years only shown
+  // once non-zero (a "0 Years" card reads as noise pre-first-anniversary),
+  // Months and Days always shown. Always 2 or 3 cards, same as V1's
+  // SunflowerCountdown.
+  const tier1Units: { value: number; label: string }[] =
+    elapsed.years > 0
+      ? [
+          { value: elapsed.years, label: "Years" },
+          { value: elapsed.months, label: "Months" },
+          { value: elapsed.days, label: "Days" },
+        ]
+      : [
+          { value: elapsed.months, label: "Months" },
+          { value: elapsed.days, label: "Days" },
+        ];
+
+  const timeOfDay = [elapsed.hours, elapsed.minutes, elapsed.seconds]
+    .map((n) => String(n).padStart(2, "0"))
+    .join(":");
 
   return (
     <section className="relative z-20 -mt-16 px-6 sm:-mt-20">
@@ -83,7 +128,7 @@ export default function ElegantCountdown({
           {label}
         </motion.p>
         <div className="flex flex-wrap justify-center gap-3 sm:gap-5">
-          {units.map((unit) => (
+          {tier1Units.map((unit) => (
             <motion.div
               key={unit.label}
               variants={fadeUpVariant}
@@ -106,6 +151,16 @@ export default function ElegantCountdown({
             </motion.div>
           ))}
         </div>
+
+        {/* Tier 2 — Hours:Minutes:Seconds, deliberately subordinate to Tier
+            1's cards: a single live-ticking inline string, not matching
+            card chrome. Same pattern as V1's SunflowerCountdown. */}
+        <motion.p
+          variants={fadeUpVariant}
+          className="mt-5 text-sm tracking-[0.15em] text-[#faf5f0]/40"
+        >
+          {timeOfDay}
+        </motion.p>
       </motion.div>
     </section>
   );

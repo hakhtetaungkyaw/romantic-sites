@@ -12,7 +12,7 @@ export default function GoldenSkySectionPreviewPage() {
       people={people}
       groupTitle={groupTitle}
       specialDate={specialDate}
-      photos={photos}
+      photo={photos[0]?.src}
     />
   );
 }

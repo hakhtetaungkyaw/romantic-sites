@@ -22,49 +22,21 @@ interface SunlitPolaroidsProps {
   photos: SitePhoto[];
 }
 
-// Same demo photo set as gallery/Magazine.tsx's PHOTO_DIMENSIONS, duplicated
-// locally rather than imported — the two galleries share no component code,
-// only (coincidentally) the same underlying demo asset files. Falls back to
-// a generic square ratio for any photo not in this set (real customer
-// photos won't be, until this gets promoted to reading real dimensions).
-const PHOTO_DIMENSIONS: Record<string, { width: number; height: number }> = {
-  "couple-01.jpg": { width: 436, height: 236 },
-  "couple-02.jpg": { width: 100, height: 106 },
-  "couple-03.jpg": { width: 136, height: 136 },
-  "couple-04.jpg": { width: 136, height: 136 },
-  "couple-05.jpg": { width: 136, height: 136 },
-  "couple-06.jpg": { width: 136, height: 136 },
-  "couple-07.jpg": { width: 136, height: 136 },
-  "couple-08.jpg": { width: 136, height: 136 },
-  "couple-09.jpg": { width: 136, height: 136 },
-  "couple-10.jpg": { width: 136, height: 136 },
-  "couple-11.jpg": { width: 136, height: 136 },
-  "couple-12.jpg": { width: 136, height: 136 },
-  "couple-13.jpg": { width: 136, height: 136 },
-  "couple-14.jpg": { width: 136, height: 136 },
-  "couple-15.jpg": { width: 136, height: 136 },
-  "couple-16.jpg": { width: 136, height: 136 },
-};
-
-const DEFAULT_DIMENSIONS = { width: 1, height: 1 };
-
-function getDimensions(src: string) {
-  const filename = src.split("/").pop() ?? "";
-  return PHOTO_DIMENSIONS[filename] ?? DEFAULT_DIMENSIONS;
-}
-
-// Every 4th photo (index 3, 7, 11, ...) is a "featured" larger card — an
-// editorial rhythm instead of the previous uniform grid. Modulo-based (not
-// random) so it's stable across server/client and re-renders, same
-// reasoning as ROTATIONS/TAPE_SIDES/TAPE_COLORS below. sm:col-span-2 (see
-// the grid below) is what actually makes it bigger on desktop; on mobile's
-// 2-column grid it isn't spanned, so it renders at the same size as every
-// other card there.
-const FEATURED_INDEX_MODULO = 4;
-
-function isFeatured(index: number) {
-  return index % FEATURED_INDEX_MODULO === 3;
-}
+// BUG FIX: this used to look up each photo's aspect ratio from a hardcoded
+// map of 16 demo filenames (couple-01.jpg...couple-16.jpg), falling back to
+// a 1x1 default for anything else — meaning every real customer photo (a
+// unique hosted URL, never literally named "couple-01.jpg") silently hit
+// that fallback and got force-cropped to a square regardless of its real
+// shape. Rather than trying to recover real dimensions (which would need
+// either a new stored width/height per photo, or a client-side probe),
+// every card now shares ONE fixed square frame — same size for every photo,
+// no featured/standard distinction — with the photo cropped to fill it via
+// object-cover. Square (not e.g. 4:5) matches this component's own
+// "polaroid" metaphor: real Polaroid instant-film prints are themselves
+// close to square, so a uniform square frame reads as authentically
+// polaroid-like regardless of the source photo's own orientation, rather
+// than an arbitrary editorial-crop ratio.
+const CARD_SIZE_PX = 220;
 
 // Hand-placed, fixed values (not Math.random()) — same hydration-safety
 // reasoning as FLOWERS/CLOUDS elsewhere in V1: this needs to look like a
@@ -263,12 +235,6 @@ function Lightbox({ photos, index, onClose, onNavigate }: LightboxProps) {
 
   if (!isMounted || !photo) return null;
 
-  // Reuses the grid's own getDimensions() lookup — the same source of truth
-  // that already sizes each polaroid card to its photo's real aspect ratio —
-  // instead of a fixed landscape box, so a portrait photo's frame hugs the
-  // actual rendered image instead of pillarboxing inside a mismatched shape.
-  const { width: photoWidth, height: photoHeight } = getDimensions(photo.src);
-
   return createPortal(
     <AnimatePresence>
       <motion.div
@@ -359,12 +325,23 @@ function Lightbox({ photos, index, onClose, onNavigate }: LightboxProps) {
             <SunflowerStamp size={46} />
             <LightboxButterfly size={46} />
 
-            <Image
+            {/* Plain <img>, not next/image — this needs to show the photo
+                at its own real, natural aspect ratio (no pillarboxing), and
+                with the getDimensions() lookup removed (see the BUG FIX
+                comment above CARD_SIZE_PX) there's no width/height left to
+                give next/image's own `<Image>`, which requires one of
+                `fill` or explicit width+height. A real `<img>` needs
+                neither — the browser sizes it from the file itself — so
+                CSS alone (h-auto/w-auto plus the same max-h/max-w caps
+                already here) reproduces the exact same "shrink-wrap to the
+                photo's real shape, capped at ~58-62vh/82vw" behavior with
+                no dimension data required. Same eslint-disable convention
+                already used for admin thumbnails
+                (app/admin/orders/[slug]/page.tsx). */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={photo.src}
               alt={photo.caption ?? "Enlarged memory"}
-              width={photoWidth}
-              height={photoHeight}
-              sizes="(max-width: 768px) 85vw, 900px"
               className="block h-auto max-h-[58vh] w-auto max-w-[82vw] rounded-sm object-contain sm:max-h-[62vh]"
             />
 
@@ -410,14 +387,13 @@ export default function SunlitPolaroids({ photos }: SunlitPolaroidsProps) {
           value, and wasn't worth the added complexity for a flourish this
           subtle.
 
-          sm:grid-flow-dense: without it, a col-span-2 featured card that
-          doesn't fit the current row's remaining columns just starts a new
-          row and leaves the gap behind it empty — dense backfills that gap
-          with whichever later standard-sized card fits, so the larger and
-          smaller cards actually interlock instead of leaving holes. Column
-          count itself (2 mobile / 3 sm+) is unchanged. */}
+          Column count (2 mobile / 3 sm+) is unchanged; every card is now
+          the same fixed square size (see the BUG FIX comment on
+          CARD_SIZE_PX above), so there's no featured/standard split left to
+          interlock — sm:grid-flow-dense accordingly dropped along with it,
+          since a uniform grid has no gaps for dense packing to backfill. */}
       <motion.div
-        className="mx-auto grid max-w-5xl grid-cols-2 gap-x-6 gap-y-14 sm:grid-cols-3 sm:grid-flow-dense sm:gap-x-10 sm:gap-y-16"
+        className="mx-auto grid max-w-5xl grid-cols-2 gap-x-6 gap-y-14 sm:grid-cols-3 sm:gap-x-10 sm:gap-y-16"
         initial="hidden"
         whileInView="visible"
         viewport={viewportOnce}
@@ -425,11 +401,9 @@ export default function SunlitPolaroids({ photos }: SunlitPolaroidsProps) {
       >
         {photos.map((photo, index) => {
           const { src, caption } = photo;
-          const { width, height } = getDimensions(src);
           const rotate = ROTATIONS[index % ROTATIONS.length];
           const tapeSide = TAPE_SIDES[index % TAPE_SIDES.length];
           const tapeColor = TAPE_COLORS[index % TAPE_COLORS.length];
-          const featured = isFeatured(index);
 
           return (
             <motion.div
@@ -437,34 +411,58 @@ export default function SunlitPolaroids({ photos }: SunlitPolaroidsProps) {
               custom={rotate}
               variants={scaleBlurVariant}
               whileHover={{ rotate: 0, scale: 1.03 }}
-              className={`relative flex flex-col items-center ${featured ? "sm:col-span-2" : ""}`}
+              className="relative flex flex-col items-center"
             >
+              {/* BUG FIX: this <button> had no explicit width. Its parent
+                  is `flex flex-col items-center`, and under `items-center`
+                  (not the flex default `stretch`) a flex item with no
+                  explicit width shrink-wraps to its own content instead of
+                  filling the available space. The button's only real
+                  content was the frame div below, whose own width is a
+                  PERCENTAGE (`min(220px, 100%)`) — a percentage resolves
+                  against its containing block, but that containing block
+                  (this button) was itself trying to size around that same
+                  child, a circular/indeterminate dependency with no single
+                  predictable resolution. In practice different photo
+                  instances resolved to wildly different, mostly tiny,
+                  widths (verified directly: 20-58px for most cards, ~155px
+                  for one, against an intended up-to-220px) — not an
+                  object-fit/object-cover issue (that was already applying
+                  correctly and uniformly everywhere), a sizing issue one
+                  level up. `w-full` gives the button a real, determinate
+                  width (100% of its grid cell) so `min(220px, 100%)`
+                  finally has something solid to resolve against. */}
               <button
                 type="button"
                 onClick={() => setLightboxIndex(index)}
                 aria-label={caption ? `Enlarge photo: ${caption}` : "Enlarge photo"}
-                className="relative cursor-pointer rounded-sm bg-[#fdf6ec] p-2.5 pb-8 text-left shadow-lg shadow-[#6b4332]/15"
+                className="relative w-full cursor-pointer rounded-sm bg-[#fdf6ec] p-2.5 pb-8 text-left shadow-lg shadow-[#6b4332]/15"
               >
                 <WashiTape side={tapeSide} color={tapeColor} />
 
+                {/* mx-auto: now that the button above can genuinely be
+                    wider than 220px (its own grid column, on larger
+                    screens), this capped-width frame needs to stay
+                    centered inside it rather than default-left-aligning as
+                    a narrower block. */}
                 <div
-                  className="relative w-full overflow-hidden bg-[#e8c4b0]"
+                  className="relative mx-auto overflow-hidden bg-[#e8c4b0]"
                   style={{
-                    aspectRatio: `${width} / ${height}`,
-                    width: featured ? "min(460px, 100%)" : "min(220px, 100%)",
+                    aspectRatio: "1 / 1",
+                    width: `min(${CARD_SIZE_PX}px, 100%)`,
                   }}
                 >
                   <Image
                     src={src}
                     alt={caption ?? `Memory ${index + 1}`}
                     fill
-                    sizes={featured ? "(max-width: 640px) 90vw, 460px" : "(max-width: 640px) 45vw, 220px"}
-                    className="object-cover"
+                    sizes={`(max-width: 640px) 45vw, ${CARD_SIZE_PX}px`}
+                    className="object-cover object-center"
                   />
                 </div>
 
                 {caption && (
-                  <p className="font-display mt-3 max-w-[200px] text-center text-xs italic leading-snug text-[#4a2f26]/75">
+                  <p className="font-display mx-auto mt-3 max-w-[200px] text-center text-xs italic leading-snug text-[#4a2f26]/75">
                     {caption}
                   </p>
                 )}

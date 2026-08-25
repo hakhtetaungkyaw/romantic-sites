@@ -88,6 +88,29 @@ unaware of the array shape.
   directly, Birthday-specific extras from `SiteData.customData.birthday`
   (shaped by the `BirthdayCustomData` interface in `types/site.ts`) —
   props: `data: SiteData`
+- `templates/BirthdayV2.tsx` — "Spotlight Countdown," the second Birthday
+  template. **Phase 1 (entrance sequence) + Phase 2 (hub layout) built —
+  still no 3D cake (Phase 3) or functional mini-games (Phase 4).** Composes
+  `birthdayShared/hero/CountdownReveal.tsx` (see that entry below) wrapping
+  `birthdayShared/interactive/ArcadeHub.tsx` (see that entry further below)
+  — Phase 1's old inline `MainHubPlaceholder` ("Main hub coming soon") is
+  gone, replaced by the real Phase 2 hub; nothing else about this template
+  needed to change to make that swap, since `CountdownReveal` already takes
+  whatever comes next as `children`. Same
+  `components/birthdayShared/` isolation as Birthday V1 — new, distinctly-
+  named files in the SAME product-line tree (not a separate
+  `birthdayV2Shared/` folder), matching how Anniversary V1/V2 already
+  coexist in `components/shared/`; never imports anything
+  `templates/BirthdayV1.tsx` renders. Data plumbing: `people[0].name` (the
+  single honoree — Birthday V2 matches V1's single-honoree design, not
+  Anniversary's `people[]` list; an earlier pass scoped this as
+  multi-honoree, reverted after live-testing confirmed V1's pattern was the
+  right fit) and the new `SiteData.birthdayV2Message` (the entrance
+  sequence's one customizable line); every other required `SiteData` field
+  this phase's admin form still has to supply (`title`, `message`,
+  `specialDate`, `photos`) is unused by this phase — see
+  `app/admin/_shared/birthdayV2Order.ts`'s own doc comment — props:
+  `data: SiteData`
 
 ## hero/
 
@@ -364,6 +387,48 @@ Birthday product line's own component tree — a sibling to `components/shared/`
   (wraps the entire template in `templates/BirthdayV1.tsx`) — props:
   `children: React.ReactNode`, `onOpen?: () => void`, `age?: number`,
   `personName?: string`
+- `CountdownReveal.tsx` — Birthday V2 "Spotlight Countdown"'s entrance
+  sequence, this template's own counterpart to `BirthdayGate.tsx` — same
+  "wrap children, only mount them once the sequence finishes, lock body
+  scroll until then" shape, reimplemented fully locally (imports nothing
+  from `BirthdayGate.tsx`), but a deliberately different interaction model:
+  **no tap targets anywhere** — every stage auto-advances on its own timer,
+  so the sequence can't be skipped or sped through. 4 auto-playing beats:
+  (1) "Your Special Day Is Coming" types in letter-by-letter (a local
+  `useTypeSequence` one-shot typewriter hook — reimplemented from
+  `message/TypedPhrases.tsx`'s own `useTypewriter` state-machine technique
+  rather than imported, per this file's own isolation reasoning; reuses that
+  same file's `.typewriter-cursor` CSS utility from `globals.css`, which is
+  shared infra like Tailwind, not component code) over a deep teal/
+  blue-black "sophisticated night" stage (`#0f2b30` center / `#050b0f`
+  edge, `#4fbdc2` the one accent color — revised after live-testing the
+  original warm rose-pink version; checked Anniversary V2's own tokens
+  first so this stays a genuinely distinct hue family, see this component's
+  own top doc comment for the full color audit) with a soft `AuroraDrift`
+  background — 3 large, independently-drifting blurred gradient ribbons,
+  replacing the previous single centered radial glow + scattered twinkle-dot
+  field entirely (both were disliked live, not just their old color) —
+  holding briefly once fully typed before advancing; (2) a 3-2-1 countdown,
+  one large serif digit at a time; (3) a "Happy Birthday, {name}!" burst —
+  same typewriter effect, typed as two lines ("Happy Birthday," then
+  "{name}!", `useTypeSequence` generalizes to a line sequence for this) —
+  with a one-shot `public/animations/confetti.json` Lottie (same licensed
+  asset `BirthdayGate.tsx`/`closing/GrandFinale.tsx` already use — a shared
+  static asset, not shared component code — recolored for just this
+  instance via a CSS hue-rotate/saturate filter so its own baked-in warm
+  palette doesn't clash with the cooler backdrop, the same shared-Lottie-
+  recolor trick `lib/v1ButterflyFilters.ts`'s `BUTTERFLY_FILTER_GOLD`
+  already established); (4) the customer's own personal message
+  (`SiteData.birthdayV2Message`) in a glass-morphism card, then reveals
+  `children`. Honoree name reads `people[0].name` directly (single-honoree,
+  matching `BirthdayGate.tsx`'s own `personName` prop and fallback — not
+  Anniversary's multi-person join; an earlier pass here used a local
+  `joinNames` helper for 1/2/3+ honorees, reverted after live-testing
+  confirmed Birthday V2 should match V1's single-honoree design instead) —
+  used in: Birthday V2 (wraps `templates/BirthdayV2.tsx`'s own hub
+  placeholder today; will wrap the real hub once Phase 2 builds it, with no
+  change needed here) — props: `personName?: string`, `message: string`,
+  `children: React.ReactNode`
 
 ## birthdayShared/interactive/
 
@@ -421,6 +486,138 @@ per-balloon message panel, the wheel's landed-item modal) is unaffected.
   `onSelectGift: () => void`, `onSelectPhotos: () => void`,
   `onSelectCake: () => void`, `onSelectWishes: () => void`,
   `onProceedToFinale: () => void`
+- `ArcadeHub.tsx` — Birthday V2's own Phase 2 (layout) + Phase 3 (real cake)
+  hub, `templates/BirthdayV2.tsx`'s
+  counterpart to `CelebrationHub.tsx` above — a deliberately different
+  metaphor (an orderly "arcade floor": plain CSS Grid/Flexbox, not
+  `CelebrationHub.tsx`'s hand-placed asymmetric scatter coordinates), not a
+  port of it; no shared code between the two, same sibling-isolation
+  convention `CelebrationHub.tsx`'s own doc comment already establishes.
+  Eyebrow "The Celebration Continues" + heading "{personName}'s Arcade" (or
+  "The Arcade" when unset) — deliberately does NOT re-say "Happy Birthday,
+  {name}!" the way `CelebrationHub.tsx` does, since
+  `hero/CountdownReveal.tsx`'s own multi-beat entrance sequence already
+  spends that exact line as its emotional peak; this hub is a navigation
+  screen with its own identity, not a second climax. A centerpiece
+  `CakeCenterpiece` — a soft radial-gradient glow blob (same "spotlight"
+  language `CountdownReveal.tsx` established) behind a `next/dynamic({ ssr:
+  false })`-loaded `CakeCenterpiece3D` (see that file's own entry below).
+  **No circular frame around the canvas anymore** — an earlier pass clipped
+  it into a bordered, rounded-full "porthole" div; removed after visual
+  review found it made a genuinely rotatable 3D object feel boxed into a
+  flat 2D icon frame. `CakeCenterpiece3D.tsx`'s own `<Canvas>` now sets
+  `gl={{ alpha: true }}` so its WebGL surface is actually transparent —
+  this hub's own aurora background shows through directly wherever the
+  scene doesn't draw anything, nothing bounding the cake at all — and the
+  `loading` fallback renders nothing rather than a placeholder disc, so
+  there's no boundary-shape flash right before the real canvas mounts. No
+  "Coming Soon" pill on the centerpiece, since it's a real working object
+  now, not a placeholder (unlike the tiles below, which still are). Flanked
+  by 4 non-interactive `ArcadeTile` cabinet
+  cards (screen-bezel icon +
+  marquee label + the same "Coming Soon" pill) with placeholder working
+  titles — Spin the Wheel, Ring Toss, Memory Match, Claw Machine — Phase 4
+  wires these to real mini-games; deliberately plain `<div>`s, not
+  `<button>`s that would do nothing on tap (which reads as broken) — the
+  dimmed styling + pill IS the affordance. A local `AuroraBackground` (3
+  drifting blurred gradient ribbons) continues `CountdownReveal.tsx`'s own
+  aurora look, reimplemented fresh here (not imported) per the same
+  sibling-isolation note. No music toggle — Birthday V2 has no song field
+  anywhere in its admin form yet, deferred to a later phase. Responsive:
+  `lg:`+ shows 2 tiles flanking the centerpiece in one horizontal row (the
+  actual "arcade floor" read); below that, the flanking columns are hidden
+  and a single 2x2 tile grid takes over instead — duplicate markup + CSS
+  visibility toggling (`hidden`/`lg:hidden`) rather than one unified
+  grid-template-areas layout, the simplest robust option for a handful of
+  static, cheap placeholder cards with no state — used in: Birthday V2 —
+  props: `personName?: string`
+- `CakeCenterpiece3D.tsx` — Birthday V2's Phase 3 build: the real 3D cake,
+  `ArcadeHub.tsx`'s replacement for its own Phase 2 flat line-art
+  `CakeSilhouette` placeholder. `@react-three/fiber` + `@react-three/drei`
+  (`OrbitControls` only) over `three` — procedural primitives (cylinder
+  tiers, torus frosting rings, cone/sphere candle flames), not a sourced
+  model; see the Phase 3 investigation report for the full reasoning (zero
+  licensing risk for a commercial product, no 3D-artist bottleneck,
+  decoration-state flexibility, style fit with this template's established
+  flat/geometric teal identity). Validated via a throwaway Step A prototype
+  (deleted once its findings were reported): real production bundle impact
+  ~232KB gzip for the whole three+fiber+drei chunk, confirmed empirically
+  isolated to this component's own dynamic-import boundary (zero
+  three-related chunks load on any unrelated route); throttled-CPU init
+  time on a real device was NOT independently verified in that environment
+  (this repo's own `next build` fails during static prerendering on an
+  unrelated, pre-existing `.env.production`/`DATABASE_URL` issue, flagged
+  as a separate follow-up, not fixed as part of this work) — still owed
+  before this phase ships, separate from the readability fix below.
+  **Readability fix, found by an actual real-device spot-check (the one
+  thing headless/software-rendered testing couldn't catch):** the first
+  pass used one ambient light (0.55) + one directional key light + a dark,
+  non-emissive frosting material — rotating away from the key light's side
+  made the whole cake read as nearly black, since a single-key-light PBR
+  setup has no lit floor on the far side. A second, independent bug found
+  while investigating: candles/toppings were never actually nested inside
+  the tiers' own offset group, so they floated disconnected above the
+  frosting surface — a real contributor to "reads as a ring and 3 dots, not
+  a cake." Both fixed: ambient raised to 0.95, a second fill directional
+  light added from roughly the opposite azimuth, tier materials now carry
+  `emissive={frostingColor}` (self-illuminated in their own current color,
+  matching this template's already-stylized/non-photoreal visual language
+  rather than depending on perfect external lighting), frosting base color
+  lightened (`#1d3d40` -> `#2f6167`), and tiers/candles/toppings now share
+  ONE local coordinate space (`CAKE_GROUP_OFFSET`) so they can't drift out
+  of sync again. Verified via a full 360deg azimuth sweep (7 screenshots at
+  60deg steps) — reads clearly as a cake at every single stop, not just the
+  default angle. A SEPARATE finding from the same spot-check: extreme
+  vertical drag angles are inherently uninformative for any stack-of-
+  cylinders shape (straight overhead reads as flat concentric rings —
+  literally the "ring and dots" complaint; straight underneath shows only
+  the flat base cap) — not fixable with lighting, since it's a property of
+  the geometry itself at those angles, same as a real photographed cake.
+  **First fix (superseded for the top end, see below):** clamped
+  `OrbitControls`' `minPolarAngle`/`maxPolarAngle` to roughly a 50-85deg
+  "product viewer" band so those extremes just weren't reachable.
+  **Revisited per the person's own instruction — fix the actual top visual
+  instead of hiding it behind a restricted range:** `CakeTiers` gained a
+  small center accent ring plus two piped `DotRing` borders (one on the top
+  tier's own rim, one on the exposed shelf where the wider bottom tier
+  peeks out past the narrower top tier), and `Candles` was rearranged from
+  an arc compressed toward the camera (looked lopsided from near-overhead)
+  into a rotationally-even circular cluster (small enough to sit inside the
+  new center ring). With real content up there, `minPolarAngle` opened from
+  ~50deg to ~7deg (just short of the exact top-down singularity, which can
+  jitter) — verified via a full vertical sweep (8 screenshots) that the
+  transition is smooth the whole way up, with no jarring "unfinished
+  underside" pop, and the settled near-top-down view reads as a genuinely
+  decorated 2-tier cake, not "a ring and dots." `maxPolarAngle` stayed at
+  ~85deg unchanged — the underside is just the bottom tier's own flat,
+  undecorated base cap, and customers have no real reason to look up at the
+  bottom of a cake, so that end wasn't worth the same investment. Two of
+  the swappable toppings were nudged to avoid colliding with the new
+  permanent decoration if ever unlocked alongside it: `SparkleTopper`'s
+  height (`+0.35` -> `+0.55`, clear of the candle cluster's flame tips) and
+  `DotScatter`'s radius (`0.75` -> `0.55`, inside the new permanent outer
+  `DotRing` at `0.78` rather than nearly overlapping it).
+  `frameloop="demand"`, no shadows — same performance posture the Step A
+  prototype actually tested; deliberately NO idle candle-flicker animation
+  loop and NO `OrbitControls` `autoRotate` (both would need continuous
+  per-frame rendering, contradicting "demand" mode) — camera stays static
+  until the customer actually drags to orbit, matching the original scope
+  ("static display with orbit/rotate controls," not an auto-rotating one).
+  Decoration-state props are the actual Phase 4 hook point: `frostingColor`
+  (a plain material color swap), `toppingsUnlocked` (a `CakeToppingId[]` —
+  `sparkle-topper`/`orbit-rings`/`dot-scatter` — any id present mounts its
+  own small primitive mesh; empty by default this phase since no mini-game
+  has unlocked anything yet, but the mechanism itself is real, not "Coming
+  Soon" fakery), `candleCount` (each candle its own independent primitive
+  group — body + static-lit flame — so Phase 4's per-candle lit/unlit +
+  blow interaction has real individual objects to target; defaults to 3,
+  all lit, so the cake reads as a genuinely finished idle object rather
+  than empty/broken). Loaded via `next/dynamic({ ssr: false })` directly in
+  `ArcadeHub.tsx` (allowed there since that whole file already starts with
+  `"use client"` — WebGL/Canvas can't render on the server regardless) —
+  used in: Birthday V2 (`ArcadeHub.tsx`'s own centerpiece) — props:
+  `frostingColor?: string`, `toppingsUnlocked?: CakeToppingId[]`,
+  `candleCount?: number`
 - `BalloonReveal.tsx` — a tap-to-pop balloon bouquet (up to 7, one per
   `customData.birthday.balloonMessages` entry), warm-palette gradient
   balloons on hand-placed slots with independent idle float/sway, tap pops

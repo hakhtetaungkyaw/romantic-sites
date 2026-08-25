@@ -731,7 +731,7 @@ export default function SunsetHero({ people, groupTitle, title }: SunsetHeroProp
 
         <motion.p
           variants={fadeUpVariant}
-          className="font-display mt-6 max-w-xl text-xl italic text-[#4a2f26]/75 sm:text-2xl"
+          className="font-display mx-auto mt-6 max-w-xl text-xl italic text-[#4a2f26]/75 sm:text-2xl"
         >
           {title}
         </motion.p>

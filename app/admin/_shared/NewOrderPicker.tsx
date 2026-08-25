@@ -18,6 +18,14 @@ export interface NewOrderTemplateOption {
   href: string;
   accentColor: string;
   comingSoon: boolean;
+  /** A visible, always-shown caveat badge distinct from `comingSoon` — for
+   *  a template that IS active/clickable but is genuinely incomplete (e.g.
+   *  Birthday V2 Phase 1: only the entrance sequence is built, everything
+   *  past it is a placeholder). `comingSoon` disables the link entirely;
+   *  this doesn't — it just makes sure whoever opens the picker sees the
+   *  caveat in the UI itself, not only in a chat transcript or commit
+   *  message somewhere. */
+  earlyAccessLabel?: string;
 }
 
 export const NEW_ORDER_TEMPLATES: NewOrderTemplateOption[] = [
@@ -35,7 +43,7 @@ export const NEW_ORDER_TEMPLATES: NewOrderTemplateOption[] = [
     description: "Golden Hour Sunflower",
     href: "/admin/new-order/anniversary-v1",
     accentColor: "#dd9a42",
-    comingSoon: true,
+    comingSoon: false,
   },
   {
     key: "anniversary-v2",
@@ -43,7 +51,16 @@ export const NEW_ORDER_TEMPLATES: NewOrderTemplateOption[] = [
     description: "Night Sky",
     href: "/admin/new-order/anniversary-v2",
     accentColor: "#d4af7a",
-    comingSoon: true,
+    comingSoon: false,
+  },
+  {
+    key: "birthday-v2",
+    name: "Birthday V2",
+    description: "Spotlight Countdown",
+    href: "/admin/new-order/birthday-v2",
+    accentColor: "#4fbdc2",
+    comingSoon: false,
+    earlyAccessLabel: "Phase 1 preview",
   },
 ];
 
@@ -108,6 +125,11 @@ export default function NewOrderPicker() {
                     {template.comingSoon && (
                       <span className="rounded-full border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gray-500">
                         Coming soon
+                      </span>
+                    )}
+                    {!template.comingSoon && template.earlyAccessLabel && (
+                      <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-400">
+                        {template.earlyAccessLabel}
                       </span>
                     )}
                   </div>
